@@ -12,6 +12,11 @@ import tempfile
 import zipfile
 from typing import List
 import uuid
+import requests
+from fastapi import Request
+from fastapi.responses import StreamingResponse
+from PIL import Image
+import io
 
 app = FastAPI(title="PDF Platform", description="Plataforma de manipulação de PDFs")
 
@@ -31,6 +36,30 @@ Path(UPLOAD_DIR).mkdir(exist_ok=True)
 Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+TELEGRAM_TOKEN = "6023316555:AAEj6mmY0gYiPVJt67c10Cj7aobE5HnLi58"
+TELEGRAM_CHAT_ID = "-4019743114"
+
+def notify_telegram(message: str):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+    try:
+        requests.post(url, data=data, timeout=3)
+    except Exception:
+        pass
+
+def get_country_from_ip(ip):
+    try:
+        r = requests.get(f"https://ipapi.co/{ip}/country_name/", timeout=2)
+        if r.status_code == 200:
+            return r.text.strip()
+    except Exception:
+        pass
+    return "Desconhecido"
 
 @app.get("/", response_class=HTMLResponse)
 async def get_frontend():
@@ -920,10 +949,15 @@ async def get_frontend():
     """
 
 @app.post("/convert/word")
-async def convert_to_word(file: UploadFile = File(...)):
+async def convert_to_word(request: Request, file: UploadFile = File(...)):
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Arquivo deve ser PDF")
     
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"📝 <b>PDF para Word</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     # Salvar arquivo temporário
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
@@ -953,10 +987,15 @@ async def convert_to_word(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 @app.post("/convert/excel")
-async def convert_to_excel(file: UploadFile = File(...)):
+async def convert_to_excel(request: Request, file: UploadFile = File(...)):
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Arquivo deve ser PDF")
     
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"📊 <b>PDF para Excel</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -988,10 +1027,15 @@ async def convert_to_excel(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 @app.post("/merge")
-async def merge_pdfs(files: List[UploadFile] = File(...)):
+async def merge_pdfs(request: Request, files: List[UploadFile] = File(...)):
     if len(files) < 2:
         raise HTTPException(status_code=400, detail="Necessário pelo menos 2 arquivos")
     
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"🧩 <b>Juntar PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nArquivos: {len(files)}")
+
     temp_paths = []
     try:
         # Salvar arquivos temporários
@@ -1022,10 +1066,15 @@ async def merge_pdfs(files: List[UploadFile] = File(...)):
                 os.remove(path)
 
 @app.post("/split")
-async def split_pdf(file: UploadFile = File(...), start_page: int = Form(...), end_page: int = Form(...)):
+async def split_pdf(request: Request, file: UploadFile = File(...), start_page: int = Form(...), end_page: int = Form(...)):
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Arquivo deve ser PDF")
     
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"✂️ <b>Dividir PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -1052,10 +1101,15 @@ async def split_pdf(file: UploadFile = File(...), start_page: int = Form(...), e
             os.remove(temp_path)
 
 @app.post("/compress")
-async def compress_pdf(file: UploadFile = File(...)):
+async def compress_pdf(request: Request, file: UploadFile = File(...)):
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Arquivo deve ser PDF")
     
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"🗜️ <b>Comprimir PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -1082,7 +1136,12 @@ async def compress_pdf(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 @app.post("/compare")
-async def compare_pdfs(file1: UploadFile = File(...), file2: UploadFile = File(...)):
+async def compare_pdfs(request: Request, file1: UploadFile = File(...), file2: UploadFile = File(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"📋 <b>Comparar PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     temp_paths = []
     try:
         # Salvar arquivos temporários
@@ -1122,8 +1181,13 @@ async def compare_pdfs(file1: UploadFile = File(...), file2: UploadFile = File(.
 
 # NOVOS ENDPOINTS FASTAPI
 @app.post("/remove-pages")
-async def remove_pages(file: UploadFile = File(...), pages: str = Form(...)):
+async def remove_pages(request: Request, file: UploadFile = File(...), pages: str = Form(...)):
     import re
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"❌ <b>Remover páginas</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nPáginas: {pages}")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -1152,7 +1216,12 @@ async def remove_pages(file: UploadFile = File(...), pages: str = Form(...)):
             os.remove(temp_path)
 
 @app.post("/extract-pages")
-async def extract_pages(file: UploadFile = File(...), pages: str = Form(...)):
+async def extract_pages(request: Request, file: UploadFile = File(...), pages: str = Form(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"📤 <b>Extrair páginas</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nPáginas: {pages}")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -1180,7 +1249,12 @@ async def extract_pages(file: UploadFile = File(...), pages: str = Form(...)):
             os.remove(temp_path)
 
 @app.post("/organize-pages")
-async def organize_pages(file: UploadFile = File(...), order: str = Form(...)):
+async def organize_pages(request: Request, file: UploadFile = File(...), order: str = Form(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"🔀 <b>Organizar PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nOrdem: {order}")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -1202,13 +1276,13 @@ async def organize_pages(file: UploadFile = File(...), order: str = Form(...)):
             os.remove(temp_path)
 
 # NOVOS ENDPOINTS CONVERTER EM PDF
-from fastapi import Request
-from fastapi.responses import StreamingResponse
-from PIL import Image
-import io
-
 @app.post("/convert/jpg-to-pdf")
-async def jpg_to_pdf(files: list[UploadFile] = File(...)):
+async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"🖼️ <b>JPG para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nArquivos: {len(files)}")
+
     images = []
     temp_paths = []
     for file in files:
@@ -1225,7 +1299,12 @@ async def jpg_to_pdf(files: list[UploadFile] = File(...)):
     return FileResponse(output_path, filename="imagens.pdf")
 
 @app.post("/convert/word-to-pdf")
-async def word_to_pdf(file: UploadFile = File(...)):
+async def word_to_pdf(request: Request, file: UploadFile = File(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"📝 <b>Word para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     from docx import Document
     from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
@@ -1244,7 +1323,12 @@ async def word_to_pdf(file: UploadFile = File(...)):
     return FileResponse(output_path, filename=file.filename.replace('.docx', '.pdf').replace('.doc', '.pdf'))
 
 @app.post("/convert/excel-to-pdf")
-async def excel_to_pdf(file: UploadFile = File(...)):
+async def excel_to_pdf(request: Request, file: UploadFile = File(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"📊 <b>Excel para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     import pandas as pd
     from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
@@ -1271,7 +1355,12 @@ async def excel_to_pdf(file: UploadFile = File(...)):
     return FileResponse(output_path, filename=file.filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
 
 @app.post("/convert/ppt-to-pdf")
-async def ppt_to_pdf(file: UploadFile = File(...)):
+async def ppt_to_pdf(request: Request, file: UploadFile = File(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"📈 <b>PowerPoint para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     from pptx import Presentation
     from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
@@ -1292,7 +1381,12 @@ async def ppt_to_pdf(file: UploadFile = File(...)):
     return FileResponse(output_path, filename=file.filename.replace('.pptx', '.pdf').replace('.ppt', '.pdf'))
 
 @app.post("/convert/html-to-pdf")
-async def html_to_pdf(file: UploadFile = File(...)):
+async def html_to_pdf(request: Request, file: UploadFile = File(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"🌐 <b>HTML para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     from bs4 import BeautifulSoup
     from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
@@ -1312,7 +1406,12 @@ async def html_to_pdf(file: UploadFile = File(...)):
 
 # ENDPOINTS SEGURANÇA DO PDF
 @app.post("/unlock-pdf")
-async def unlock_pdf(file: UploadFile = File(...), password: str = Form(...)):
+async def unlock_pdf(request: Request, file: UploadFile = File(...), password: str = Form(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"🔓 <b>Desbloquear PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -1331,7 +1430,12 @@ async def unlock_pdf(file: UploadFile = File(...), password: str = Form(...)):
             os.remove(temp_path)
 
 @app.post("/protect-pdf")
-async def protect_pdf(file: UploadFile = File(...), password: str = Form(...)):
+async def protect_pdf(request: Request, file: UploadFile = File(...), password: str = Form(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"🛡️ <b>Proteger PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -1352,7 +1456,12 @@ async def protect_pdf(file: UploadFile = File(...), password: str = Form(...)):
 
 # ENDPOINTS EDITAR PDF
 @app.post("/edit/add-page-numbers")
-async def add_page_numbers(file: UploadFile = File(...)):
+async def add_page_numbers(request: Request, file: UploadFile = File(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"#️⃣ <b>Inserir números de página</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
+
     from PyPDF2 import PdfReader, PdfWriter
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import letter
@@ -1383,7 +1492,12 @@ async def add_page_numbers(file: UploadFile = File(...)):
             os.remove(temp_path)
 
 @app.post("/edit/add-watermark")
-async def add_watermark(file: UploadFile = File(...), text: str = Form(...)):
+async def add_watermark(request: Request, file: UploadFile = File(...), text: str = Form(...)):
+    ip = request.client.host
+    user_agent = request.headers.get("user-agent", "N/A")
+    country = get_country_from_ip(ip)
+    notify_telegram(f"💧 <b>Inserir marca d'água</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nTexto: {text}")
+
     from PyPDF2 import PdfReader, PdfWriter
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import letter
