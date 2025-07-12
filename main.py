@@ -914,26 +914,7 @@ async def get_frontend():
                 });
             });
         </script>
-        <script>
-            window.onload = function() {
-                var privacyBtn = document.getElementById('privacyBtn');
-                var privacyModal = document.getElementById('privacyModal');
-                var closePrivacy = document.getElementById('closePrivacy');
-                if (privacyBtn && privacyModal && closePrivacy) {
-                    privacyBtn.onclick = function() {
-                        privacyModal.style.display = 'flex';
-                    };
-                    closePrivacy.onclick = function() {
-                        privacyModal.style.display = 'none';
-                    };
-                    window.addEventListener('click', function(event) {
-                        if (event.target === privacyModal) {
-                            privacyModal.style.display = 'none';
-                        }
-                    });
-                }
-            }
-        </script>
+        <script src="/static/app.js"></script>
     </body>
     </html>
     """
