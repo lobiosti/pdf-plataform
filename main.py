@@ -1475,22 +1475,22 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-        writer = pypdf.PdfWriter()
-        
-        for page in reader.pages:
-            writer.add_page(page)
-        
+            writer = pypdf.PdfWriter()
+            
+            for page in reader.pages:
+                writer.add_page(page)
+            
         # Compressão básica - remove objetos duplicados
-        writer.compress_identical_objects()
-        
-        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
-        
+            writer.compress_identical_objects()
+            
+            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
+            
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF comprimido")
         
-        return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
+            return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
     
     except HTTPException:
         raise
@@ -1561,8 +1561,8 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
     
     try:
         # Parse páginas a remover e criar range de páginas a manter
-        remove_set = set()
-        for part in pages.split(','):
+            remove_set = set()
+            for part in pages.split(','):
                 part = part.strip()
                 if '-' in part:
                     start, end = map(int, part.split('-'))
@@ -1617,13 +1617,13 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
         import pypdf
         
         # Parse páginas a extrair
-        extract_set = set()
-        for part in pages.split(','):
+            extract_set = set()
+            for part in pages.split(','):
             part = part.strip()
-            if '-' in part:
-                start, end = map(int, part.split('-'))
-                extract_set.update(range(start, end+1))
-            else:
+                if '-' in part:
+                    start, end = map(int, part.split('-'))
+                    extract_set.update(range(start, end+1))
+                else:
                     extract_set.add(int(part))
         
         reader = pypdf.PdfReader(temp_path)
@@ -1677,18 +1677,18 @@ async def organize_pages(request: Request, file: UploadFile = File(...), order: 
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-        total = len(reader.pages)
-        order_list = [int(x) for x in order.split(',') if x.strip().isdigit()]
+            total = len(reader.pages)
+            order_list = [int(x) for x in order.split(',') if x.strip().isdigit()]
         
         # Validar ordem
         invalid_pages = [p for p in order_list if p < 1 or p > total]
         if invalid_pages:
-        raise HTTPException(status_code=400, detail=f"Páginas inválidas na ordem: {invalid_pages}. PDF tem {total} páginas.")
+            raise HTTPException(status_code=400, detail=f"Páginas inválidas na ordem: {invalid_pages}. PDF tem {total} páginas.")
         
         writer = pypdf.PdfWriter()
-        for idx in order_list:
-            if 1 <= idx <= total:
-            writer.add_page(reader.pages[idx - 1])
+            for idx in order_list:
+                if 1 <= idx <= total:
+                writer.add_page(reader.pages[idx - 1])
         
             output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
             with open(output_path, 'wb') as output_file:
