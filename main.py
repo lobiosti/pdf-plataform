@@ -1720,11 +1720,11 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
     temp_paths = []
     try:
         # Salvar arquivos temporários
-    for file in files:
-        temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        temp_paths.append(temp_path)
+        for file in files:
+            temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
+            with open(temp_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            temp_paths.append(temp_path)
         
         # Se houver múltiplas imagens, usar merge. Se uma só, converter diretamente
         if len(temp_paths) == 1:
