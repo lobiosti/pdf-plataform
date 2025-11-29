@@ -1791,10 +1791,10 @@ async def word_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='docx' if file.filename.endswith('.docx') else 'doc')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_word2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_word2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.docx', '.pdf').replace('.doc', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.docx', '.pdf').replace('.doc', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter Word: {str(e)}")
@@ -1819,10 +1819,10 @@ async def excel_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='xlsx' if file.filename.endswith('.xlsx') else 'xls')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_excel2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_excel2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter Excel: {str(e)}")
@@ -1847,10 +1847,10 @@ async def ppt_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='pptx' if file.filename.endswith('.pptx') else 'ppt')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_ppt2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_ppt2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.pptx', '.pdf').replace('.ppt', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.pptx', '.pdf').replace('.ppt', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter PowerPoint: {str(e)}")
@@ -1875,10 +1875,10 @@ async def html_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='html')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_html2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_html2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.html', '.pdf').replace('.htm', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.html', '.pdf').replace('.htm', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter HTML: {str(e)}")
