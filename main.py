@@ -1480,7 +1480,7 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-            writer = pypdf.PdfWriter()
+        writer = pypdf.PdfWriter()
             
             for page in reader.pages:
                 writer.add_page(page)
