@@ -36,9 +36,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Configuração da ConvertAPI
 # IMPORTANTE: Configure a variável de ambiente CONVERTAPI_SECRET no Railway
 CONVERTAPI_SECRET = os.environ.get("CONVERTAPI_SECRET")
-if not CONVERTAPI_SECRET:
-    raise ValueError("CONVERTAPI_SECRET não configurada. Configure a variável de ambiente no Railway.")
-convertapi.api_secret = CONVERTAPI_SECRET
+if CONVERTAPI_SECRET:
+    convertapi.api_secret = CONVERTAPI_SECRET
+else:
+    # Não quebra a aplicação, mas as conversões falharão
+    print("AVISO: CONVERTAPI_SECRET não configurada. Configure a variável de ambiente no Railway.")
 
 # Configuração do Telegram
 # IMPORTANTE: Configure as variáveis de ambiente TELEGRAM_TOKEN e TELEGRAM_CHAT_ID no Railway
@@ -962,6 +964,9 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Arquivo deve ser PDF")
     
+    if not CONVERTAPI_SECRET:
+        raise HTTPException(status_code=500, detail="CONVERTAPI_SECRET não configurada. Configure a variável de ambiente no Railway.")
+    
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "N/A")
     country = get_country_from_ip(ip)
@@ -996,6 +1001,9 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
 async def convert_to_excel(request: Request, file: UploadFile = File(...)):
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Arquivo deve ser PDF")
+    
+    if not CONVERTAPI_SECRET:
+        raise HTTPException(status_code=500, detail="CONVERTAPI_SECRET não configurada. Configure a variável de ambiente no Railway.")
     
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "N/A")
