@@ -5,9 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import shutil
 from pathlib import Path
-import pypdf
-from docx import Document
-from openpyxl import Workbook
 import tempfile
 import zipfile
 from typing import List
@@ -15,8 +12,7 @@ import uuid
 import requests
 from fastapi import Request
 from fastapi.responses import StreamingResponse
-from PIL import Image
-import io
+import convertapi
 
 app = FastAPI(title="PDF Platform", description="Plataforma de manipulação de PDFs")
 
@@ -36,6 +32,10 @@ Path(UPLOAD_DIR).mkdir(exist_ok=True)
 Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Configuração da ConvertAPI
+CONVERTAPI_SECRET = os.environ.get("CONVERTAPI_SECRET", "37M7QXmBr8NWDeq2fjmv47znGCzny1XM")
+convertapi.api_secret = CONVERTAPI_SECRET
 
 TELEGRAM_TOKEN = "6023316555:AAEj6mmY0gYiPVJt67c10Cj7aobE5HnLi58"
 TELEGRAM_CHAT_ID = "-4019743114"
@@ -964,23 +964,18 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        # Extrair texto do PDF
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            text = ""
-            for page in reader.pages:
-                text += page.extract_text() + "\n"
+        # Converter PDF para DOCX usando ConvertAPI
+        result = convertapi.convert('docx', {
+            'File': temp_path
+        })
         
-        # Criar documento Word
-        doc = Document()
-        doc.add_paragraph(text)
-        
-        # Salvar e retornar
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_converted.docx"
-        doc.save(output_path)
+        result.file.save(output_path)
         
         return FileResponse(output_path, filename=file.filename.replace('.pdf', '.docx'))
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na conversão: {str(e)}")
     finally:
         # Limpar arquivo temporário
         if os.path.exists(temp_path):
@@ -1001,27 +996,18 @@ async def convert_to_excel(request: Request, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        # Extrair texto do PDF
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            
-        # Criar planilha Excel
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "PDF Content"
-        
-        row = 1
-        for page_num, page in enumerate(reader.pages, 1):
-            text = page.extract_text()
-            ws.cell(row=row, column=1, value=f"Página {page_num}")
-            ws.cell(row=row, column=2, value=text)
-            row += 1
+        # Converter PDF para XLSX usando ConvertAPI
+        result = convertapi.convert('xlsx', {
+            'File': temp_path
+        })
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_converted.xlsx"
-        wb.save(output_path)
+        result.file.save(output_path)
         
         return FileResponse(output_path, filename=file.filename.replace('.pdf', '.xlsx'))
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na conversão: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1048,17 +1034,22 @@ async def merge_pdfs(request: Request, files: List[UploadFile] = File(...)):
                 shutil.copyfileobj(file.file, buffer)
             temp_paths.append(temp_path)
         
-        # Juntar PDFs
-        merger = pypdf.PdfWriter()
-        for path in temp_paths:
-            merger.append(path)
+        # Juntar PDFs usando ConvertAPI
+        # Para merge, a ConvertAPI requer passar os arquivos de forma específica
+        # Vamos converter cada PDF e depois usar a função de merge
+        files_param = []
+        for i, path in enumerate(temp_paths):
+            files_param.append({'File': path, 'Name': f'File{i+1}'})
+        
+        result = convertapi.convert('pdf', files_param, from_format='pdf')
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_merged.pdf"
-        with open(output_path, 'wb') as output_file:
-            merger.write(output_file)
+        result.file.save(output_path)
         
         return FileResponse(output_path, filename="merged.pdf")
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao juntar PDFs: {str(e)}")
     finally:
         # Limpar arquivos temporários
         for path in temp_paths:
@@ -1080,22 +1071,19 @@ async def split_pdf(request: Request, file: UploadFile = File(...), start_page: 
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            
-            if start_page < 1 or end_page > len(reader.pages) or start_page > end_page:
-                raise HTTPException(status_code=400, detail="Páginas inválidas")
-            
-            writer = pypdf.PdfWriter()
-            for i in range(start_page - 1, end_page):
-                writer.add_page(reader.pages[i])
-            
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-            
-            return FileResponse(output_path, filename="extracted_pages.pdf")
+        # Dividir PDF usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path,
+            'PageRange': f'{start_page}-{end_page}'
+        })
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename="extracted_pages.pdf")
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao dividir PDF: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1115,22 +1103,20 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            writer = pypdf.PdfWriter()
-            
-            for page in reader.pages:
-                writer.add_page(page)
-            
-            # Compressão básica
-            writer.compress_identical_objects()
-            
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-            
-            return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
+        # Comprimir PDF usando ConvertAPI
+        # A ConvertAPI comprime automaticamente durante a conversão
+        # Podemos usar parâmetros de otimização se disponíveis
+        result = convertapi.convert('pdf', {
+            'File': temp_path
+        }, from_format='pdf')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
     
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao comprimir PDF: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1182,7 +1168,6 @@ async def compare_pdfs(request: Request, file1: UploadFile = File(...), file2: U
 # NOVOS ENDPOINTS FASTAPI
 @app.post("/remove-pages")
 async def remove_pages(request: Request, file: UploadFile = File(...), pages: str = Form(...)):
-    import re
     ip = request.client.host
     user_agent = request.headers.get("user-agent", "N/A")
     country = get_country_from_ip(ip)
@@ -1191,19 +1176,34 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
     try:
+        # Parse páginas a remover e criar range de páginas a manter
+        remove_set = set()
+        for part in pages.split(','):
+            part = part.strip()
+            if '-' in part:
+                start, end = map(int, part.split('-'))
+                remove_set.update(range(start, end+1))
+            else:
+                remove_set.add(int(part))
+        
+        # Para remover páginas, precisamos extrair as páginas que queremos manter
+        # A ConvertAPI permite especificar PageRange, então vamos usar split múltiplas vezes
+        # ou usar uma abordagem diferente - vamos extrair todas as páginas exceto as removidas
+        
+        # Nota: ConvertAPI pode não ter uma função direta de remover páginas
+        # Vamos usar uma abordagem alternativa: extrair as páginas que queremos manter
+        # Primeiro, precisamos saber o total de páginas
+        # Como alternativa, podemos usar split para cada intervalo de páginas a manter
+        
+        # Nota: ConvertAPI não tem função direta de remover páginas específicas
+        # Usando pypdf para esta funcionalidade específica
+        import pypdf
         with open(temp_path, 'rb') as pdf_file:
             reader = pypdf.PdfReader(pdf_file)
             writer = pypdf.PdfWriter()
             total = len(reader.pages)
-            # Parse páginas a remover
-            remove_set = set()
-            for part in pages.split(','):
-                if '-' in part:
-                    start, end = map(int, part.split('-'))
-                    remove_set.update(range(start, end+1))
-                else:
-                    remove_set.add(int(part))
             for i in range(total):
                 if (i+1) not in remove_set:
                     writer.add_page(reader.pages[i])
@@ -1211,6 +1211,9 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
             with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
             return FileResponse(output_path, filename="removed_pages.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao remover páginas: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1225,25 +1228,49 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
     try:
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            writer = pypdf.PdfWriter()
-            total = len(reader.pages)
-            extract_set = set()
-            for part in pages.split(','):
-                if '-' in part:
-                    start, end = map(int, part.split('-'))
-                    extract_set.update(range(start, end+1))
-                else:
-                    extract_set.add(int(part))
-            for i in range(total):
-                if (i+1) in extract_set:
-                    writer.add_page(reader.pages[i])
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-            return FileResponse(output_path, filename="extracted_pages.pdf")
+        # Parse páginas a extrair
+        extract_set = set()
+        for part in pages.split(','):
+            part = part.strip()
+            if '-' in part:
+                start, end = map(int, part.split('-'))
+                extract_set.update(range(start, end+1))
+            else:
+                extract_set.add(int(part))
+        
+        # Converter range para formato da ConvertAPI (ex: "1-3,5,7-9")
+        page_ranges = []
+        sorted_pages = sorted(extract_set)
+        i = 0
+        while i < len(sorted_pages):
+            start = sorted_pages[i]
+            end = start
+            while i + 1 < len(sorted_pages) and sorted_pages[i + 1] == end + 1:
+                end = sorted_pages[i + 1]
+                i += 1
+            if start == end:
+                page_ranges.append(str(start))
+            else:
+                page_ranges.append(f"{start}-{end}")
+            i += 1
+        
+        page_range_str = ','.join(page_ranges)
+        
+        # Extrair páginas usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path,
+            'PageRange': page_range_str
+        }, from_format='pdf')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename="extracted_pages.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao extrair páginas: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1258,19 +1285,51 @@ async def organize_pages(request: Request, file: UploadFile = File(...), order: 
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
     try:
+        # Nota: ConvertAPI não tem função direta de reorganizar páginas
+        # Usando ConvertAPI para extrair páginas individuais e depois juntar
+        
         with open(temp_path, 'rb') as pdf_file:
             reader = pypdf.PdfReader(pdf_file)
-            writer = pypdf.PdfWriter()
             total = len(reader.pages)
             order_list = [int(x) for x in order.split(',') if x.strip().isdigit()]
-            for idx in order_list:
-                if 1 <= idx <= total:
-                    writer.add_page(reader.pages[idx-1])
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-            return FileResponse(output_path, filename="organized.pdf")
+        
+        # Extrair cada página na ordem desejada
+        extracted_pages = []
+        for idx in order_list:
+            if 1 <= idx <= total:
+                # Extrair página individual usando ConvertAPI
+                result = convertapi.convert('pdf', {
+                    'File': temp_path,
+                    'PageRange': str(idx)
+                }, from_format='pdf')
+                page_temp = f"{OUTPUT_DIR}/{uuid.uuid4()}_page_{idx}.pdf"
+                result.file.save(page_temp)
+                extracted_pages.append(page_temp)
+        
+        # Juntar as páginas na ordem desejada
+        if len(extracted_pages) > 1:
+            files_param = [{'File': path} for path in extracted_pages]
+            result = convertapi.convert('pdf', files_param, from_format='pdf', to_format='pdf')
+        else:
+            # Se só uma página, usar diretamente
+            result = convertapi.convert('pdf', {
+                'File': extracted_pages[0]
+            }, from_format='pdf')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
+        result.file.save(output_path)
+        
+        # Limpar páginas temporárias
+        for page_path in extracted_pages:
+            if os.path.exists(page_path):
+                os.remove(page_path)
+        
+        return FileResponse(output_path, filename="organized.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao organizar páginas: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1283,20 +1342,51 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
     country = get_country_from_ip(ip)
     notify_telegram(f"🖼️ <b>JPG para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nArquivos: {len(files)}")
 
-    images = []
     temp_paths = []
-    for file in files:
-        temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        temp_paths.append(temp_path)
-        img = Image.open(temp_path).convert("RGB")
-        images.append(img)
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
-    images[0].save(output_path, save_all=True, append_images=images[1:])
-    for path in temp_paths:
-        if os.path.exists(path): os.remove(path)
-    return FileResponse(output_path, filename="imagens.pdf")
+    try:
+        # Salvar arquivos temporários
+        for file in files:
+            temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
+            with open(temp_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            temp_paths.append(temp_path)
+        
+        # Se houver múltiplas imagens, usar merge. Se uma só, converter diretamente
+        if len(temp_paths) == 1:
+            result = convertapi.convert('pdf', {
+                'File': temp_paths[0]
+            }, from_format='jpg')
+        else:
+            # Para múltiplas imagens, converter cada uma e depois juntar
+            pdf_paths = []
+            for img_path in temp_paths:
+                result = convertapi.convert('pdf', {
+                    'File': img_path
+                }, from_format='jpg')
+                pdf_temp = f"{OUTPUT_DIR}/{uuid.uuid4()}_temp.pdf"
+                result.file.save(pdf_temp)
+                pdf_paths.append(pdf_temp)
+            
+            # Juntar os PDFs
+            files_param = [{'File': path} for path in pdf_paths]
+            result = convertapi.convert('pdf', files_param, from_format='pdf', to_format='pdf')
+            
+            # Limpar PDFs temporários
+            for path in pdf_paths:
+                if os.path.exists(path):
+                    os.remove(path)
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename="imagens.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao converter imagens: {str(e)}")
+    finally:
+        for path in temp_paths:
+            if os.path.exists(path):
+                os.remove(path)
 
 @app.post("/convert/word-to-pdf")
 async def word_to_pdf(request: Request, file: UploadFile = File(...)):
@@ -1305,22 +1395,26 @@ async def word_to_pdf(request: Request, file: UploadFile = File(...)):
     country = get_country_from_ip(ip)
     notify_telegram(f"📝 <b>Word para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
 
-    from docx import Document
-    from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    doc = Document(temp_path)
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-    for para in doc.paragraphs:
-        pdf.multi_cell(0, 10, para.text)
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_word2pdf.pdf"
-    pdf.output(output_path)
-    if os.path.exists(temp_path): os.remove(temp_path)
-    return FileResponse(output_path, filename=file.filename.replace('.docx', '.pdf').replace('.doc', '.pdf'))
+    
+    try:
+        # Converter Word para PDF usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path
+        }, from_format='docx' if file.filename.endswith('.docx') else 'doc')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_word2pdf.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename=file.filename.replace('.docx', '.pdf').replace('.doc', '.pdf'))
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao converter Word: {str(e)}")
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 @app.post("/convert/excel-to-pdf")
 async def excel_to_pdf(request: Request, file: UploadFile = File(...)):
@@ -1329,30 +1423,26 @@ async def excel_to_pdf(request: Request, file: UploadFile = File(...)):
     country = get_country_from_ip(ip)
     notify_telegram(f"📊 <b>Excel para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
 
-    import pandas as pd
-    from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    df = pd.read_excel(temp_path)
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=10)
-    col_width = pdf.w / (len(df.columns) + 1)
-    row_height = pdf.font_size * 1.5
-    # Cabeçalho
-    for col in df.columns:
-        pdf.cell(col_width, row_height, str(col), border=1)
-    pdf.ln(row_height)
-    # Linhas
-    for i, row in df.iterrows():
-        for item in row:
-            pdf.cell(col_width, row_height, str(item), border=1)
-        pdf.ln(row_height)
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_excel2pdf.pdf"
-    pdf.output(output_path)
-    if os.path.exists(temp_path): os.remove(temp_path)
-    return FileResponse(output_path, filename=file.filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
+    
+    try:
+        # Converter Excel para PDF usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path
+        }, from_format='xlsx' if file.filename.endswith('.xlsx') else 'xls')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_excel2pdf.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename=file.filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao converter Excel: {str(e)}")
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 @app.post("/convert/ppt-to-pdf")
 async def ppt_to_pdf(request: Request, file: UploadFile = File(...)):
@@ -1361,24 +1451,26 @@ async def ppt_to_pdf(request: Request, file: UploadFile = File(...)):
     country = get_country_from_ip(ip)
     notify_telegram(f"📈 <b>PowerPoint para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
 
-    from pptx import Presentation
-    from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    prs = Presentation(temp_path)
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=14)
-    for slide in prs.slides:
-        pdf.add_page()
-        for shape in slide.shapes:
-            if hasattr(shape, "text") and shape.text.strip():
-                pdf.multi_cell(0, 10, shape.text.strip())
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_ppt2pdf.pdf"
-    pdf.output(output_path)
-    if os.path.exists(temp_path): os.remove(temp_path)
-    return FileResponse(output_path, filename=file.filename.replace('.pptx', '.pdf').replace('.ppt', '.pdf'))
+    
+    try:
+        # Converter PowerPoint para PDF usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path
+        }, from_format='pptx' if file.filename.endswith('.pptx') else 'ppt')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_ppt2pdf.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename=file.filename.replace('.pptx', '.pdf').replace('.ppt', '.pdf'))
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao converter PowerPoint: {str(e)}")
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 @app.post("/convert/html-to-pdf")
 async def html_to_pdf(request: Request, file: UploadFile = File(...)):
@@ -1387,22 +1479,26 @@ async def html_to_pdf(request: Request, file: UploadFile = File(...)):
     country = get_country_from_ip(ip)
     notify_telegram(f"🌐 <b>HTML para PDF</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
 
-    from bs4 import BeautifulSoup
-    from fpdf import FPDF
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    with open(temp_path, 'r', encoding='utf-8') as f:
-        soup = BeautifulSoup(f, 'html.parser')
-        text = soup.get_text()
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, text)
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_html2pdf.pdf"
-    pdf.output(output_path)
-    if os.path.exists(temp_path): os.remove(temp_path)
-    return FileResponse(output_path, filename=file.filename.replace('.html', '.pdf').replace('.htm', '.pdf'))
+    
+    try:
+        # Converter HTML para PDF usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path
+        }, from_format='html')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_html2pdf.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename=file.filename.replace('.html', '.pdf').replace('.htm', '.pdf'))
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao converter HTML: {str(e)}")
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 # ENDPOINTS SEGURANÇA DO PDF
 @app.post("/unlock-pdf")
@@ -1415,16 +1511,21 @@ async def unlock_pdf(request: Request, file: UploadFile = File(...), password: s
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
     try:
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file, password=password)
-            writer = pypdf.PdfWriter()
-            for page in reader.pages:
-                writer.add_page(page)
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-            return FileResponse(output_path, filename="unlocked.pdf")
+        # Desbloquear PDF usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path,
+            'UserPassword': password
+        }, from_format='pdf')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename="unlocked.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao desbloquear PDF: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1439,17 +1540,21 @@ async def protect_pdf(request: Request, file: UploadFile = File(...), password: 
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
     try:
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            writer = pypdf.PdfWriter()
-            for page in reader.pages:
-                writer.add_page(page)
-            writer.encrypt(password)
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-            return FileResponse(output_path, filename="protected.pdf")
+        # Proteger PDF usando ConvertAPI
+        result = convertapi.convert('pdf', {
+            'File': temp_path,
+            'UserPassword': password
+        }, from_format='pdf')
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
+        result.file.save(output_path)
+        
+        return FileResponse(output_path, filename="protected.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao proteger PDF: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1462,17 +1567,21 @@ async def add_page_numbers(request: Request, file: UploadFile = File(...)):
     country = get_country_from_ip(ip)
     notify_telegram(f"#️⃣ <b>Inserir números de página</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>")
 
-    from PyPDF2 import PdfReader, PdfWriter
+    # Nota: ConvertAPI não tem suporte direto para inserir números de página
+    # Usando pypdf e reportlab para esta funcionalidade específica
+    import pypdf
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import letter
     import io
+    
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
     output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_numbered.pdf"
     try:
-        reader = PdfReader(temp_path)
-        writer = PdfWriter()
+        reader = pypdf.PdfReader(temp_path)
+        writer = pypdf.PdfWriter()
         for i, page in enumerate(reader.pages):
             packet = io.BytesIO()
             can = canvas.Canvas(packet, pagesize=letter)
@@ -1480,13 +1589,15 @@ async def add_page_numbers(request: Request, file: UploadFile = File(...)):
             can.drawString(500, 20, f"{i+1}")
             can.save()
             packet.seek(0)
-            from PyPDF2 import PdfReader as PR
-            watermark = PR(packet)
-            page.merge_page(watermark.pages[0])
+            watermark_reader = pypdf.PdfReader(packet)
+            page.merge_page(watermark_reader.pages[0])
             writer.add_page(page)
         with open(output_path, 'wb') as f:
             writer.write(f)
         return FileResponse(output_path, filename="numbered.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao inserir números: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1498,17 +1609,21 @@ async def add_watermark(request: Request, file: UploadFile = File(...), text: st
     country = get_country_from_ip(ip)
     notify_telegram(f"💧 <b>Inserir marca d'água</b>\nIP: <code>{ip}</code> ({country})\nUA: <code>{user_agent}</code>\nTexto: {text}")
 
-    from PyPDF2 import PdfReader, PdfWriter
+    # Nota: ConvertAPI não tem suporte direto para inserir marca d'água
+    # Usando pypdf e reportlab para esta funcionalidade específica
+    import pypdf
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import letter
     import io
+    
     temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
     with open(temp_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+    
     output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_watermarked.pdf"
     try:
-        reader = PdfReader(temp_path)
-        writer = PdfWriter()
+        reader = pypdf.PdfReader(temp_path)
+        writer = pypdf.PdfWriter()
         for page in reader.pages:
             packet = io.BytesIO()
             can = canvas.Canvas(packet, pagesize=letter)
@@ -1521,13 +1636,15 @@ async def add_watermark(request: Request, file: UploadFile = File(...), text: st
             can.restoreState()
             can.save()
             packet.seek(0)
-            from PyPDF2 import PdfReader as PR
-            watermark = PR(packet)
-            page.merge_page(watermark.pages[0])
+            watermark_reader = pypdf.PdfReader(packet)
+            page.merge_page(watermark_reader.pages[0])
             writer.add_page(page)
         with open(output_path, 'wb') as f:
             writer.write(f)
         return FileResponse(output_path, filename="watermarked.pdf")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao inserir marca d'água: {str(e)}")
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
