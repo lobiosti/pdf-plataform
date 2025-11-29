@@ -34,7 +34,10 @@ Path(OUTPUT_DIR).mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Configuração da ConvertAPI
-CONVERTAPI_SECRET = os.environ.get("CONVERTAPI_SECRET", "37M7QXmBr8NWDeq2fjmv47znGCzny1XM")
+# IMPORTANTE: Configure a variável de ambiente CONVERTAPI_SECRET no Railway
+CONVERTAPI_SECRET = os.environ.get("CONVERTAPI_SECRET")
+if not CONVERTAPI_SECRET:
+    raise ValueError("CONVERTAPI_SECRET não configurada. Configure a variável de ambiente no Railway.")
 convertapi.api_secret = CONVERTAPI_SECRET
 
 TELEGRAM_TOKEN = "6023316555:AAEj6mmY0gYiPVJt67c10Cj7aobE5HnLi58"
