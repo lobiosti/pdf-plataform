@@ -142,18 +142,18 @@ async def get_frontend():
             .hero-section {
                 background: linear-gradient(135deg, var(--lobios-purple) 0%, var(--lobios-purple-light) 100%);
                 color: white;
-                padding: 80px 20px 60px;
+                padding: 30px 20px 25px;
                 text-align: center;
-                margin-bottom: 60px;
+                margin-bottom: 30px;
             }
             .hero-section h1 {
-                font-size: 3.5rem;
+                font-size: 2rem;
                 font-weight: 700;
-                margin: 0 0 20px;
+                margin: 0 0 12px;
                 letter-spacing: -0.02em;
             }
             .hero-section p {
-                font-size: 1.25rem;
+                font-size: 0.95rem;
                 margin: 0 auto;
                 opacity: 0.95;
                 max-width: 700px;
