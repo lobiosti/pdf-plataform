@@ -998,6 +998,10 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
         
         # Converter PDF para DOCX usando ConvertAPI
         print(f"Tentando converter PDF para DOCX. Tamanho: {file_size} bytes")
+        print(f"Chave ConvertAPI configurada: {'Sim' if secret else 'Não'}")
+        print(f"Caminho do arquivo: {temp_path}")
+        
+        # Usar a sintaxe correta da ConvertAPI
         result = convertapi.convert('docx', {
             'File': temp_path
         }, from_format='pdf')
