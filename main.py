@@ -976,7 +976,7 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
         # Converter PDF para DOCX usando ConvertAPI
         result = convertapi.convert('docx', {
             'File': temp_path
-        })
+        }, from_format='pdf')
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_converted.docx"
         result.file.save(output_path)
@@ -984,7 +984,9 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
         return FileResponse(output_path, filename=file.filename.replace('.pdf', '.docx'))
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro na conversão: {str(e)}")
+        import traceback
+        error_detail = f"Erro na conversão: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         # Limpar arquivo temporário
         if os.path.exists(temp_path):
@@ -1008,7 +1010,7 @@ async def convert_to_excel(request: Request, file: UploadFile = File(...)):
         # Converter PDF para XLSX usando ConvertAPI
         result = convertapi.convert('xlsx', {
             'File': temp_path
-        })
+        }, from_format='pdf')
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_converted.xlsx"
         result.file.save(output_path)
@@ -1016,7 +1018,9 @@ async def convert_to_excel(request: Request, file: UploadFile = File(...)):
         return FileResponse(output_path, filename=file.filename.replace('.pdf', '.xlsx'))
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro na conversão: {str(e)}")
+        import traceback
+        error_detail = f"Erro na conversão: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
