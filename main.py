@@ -1489,7 +1489,7 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
             
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF comprimido")
-            
+        
             return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
     
     except HTTPException:
