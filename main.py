@@ -1676,8 +1676,8 @@ async def organize_pages(request: Request, file: UploadFile = File(...), order: 
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-            total = len(reader.pages)
-            order_list = [int(x) for x in order.split(',') if x.strip().isdigit()]
+        total = len(reader.pages)
+        order_list = [int(x) for x in order.split(',') if x.strip().isdigit()]
         
         # Validar ordem
         invalid_pages = [p for p in order_list if p < 1 or p > total]
