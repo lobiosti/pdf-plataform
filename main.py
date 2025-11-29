@@ -50,7 +50,7 @@ def get_convertapi_secret():
         try:
             import convertapi.client
             # A biblioteca pode usar convertapi.client.api_credentials
-            if not hasattr(convertapi.client, 'api_credentials') or convertapi.client.api_credentials is None:
+        if not hasattr(convertapi.client, 'api_credentials') or convertapi.client.api_credentials is None:
                 # Tentar configurar diretamente no módulo client
                 convertapi.client.api_credentials = secret
         except Exception as e:
@@ -1361,10 +1361,10 @@ async def merge_pdfs(request: Request, files: List[UploadFile] = File(...)):
             if not file.filename.endswith('.pdf'):
                 raise HTTPException(status_code=400, detail="Todos os arquivos devem ser PDF")
             
-            temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
-            with open(temp_path, "wb") as buffer:
+        temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
+        with open(temp_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            temp_paths.append(temp_path)
+        temp_paths.append(temp_path)
         
         # Nota: ConvertAPI não tem suporte direto para merge de múltiplos PDFs
         # Usando pypdf para esta funcionalidade específica (merge é uma operação simples)
@@ -1373,7 +1373,7 @@ async def merge_pdfs(request: Request, files: List[UploadFile] = File(...)):
         merger = pypdf.PdfWriter()
         for path in temp_paths:
             reader = pypdf.PdfReader(path)
-            for page in reader.pages:
+        for page in reader.pages:
                 merger.add_page(page)
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_merged.pdf"
@@ -1431,18 +1431,18 @@ async def split_pdf(request: Request, file: UploadFile = File(...), start_page: 
         if start_page < 1 or end_page > total_pages or start_page > end_page:
             raise HTTPException(status_code=400, detail=f"Páginas inválidas. PDF tem {total_pages} páginas.")
             
-            writer = pypdf.PdfWriter()
-            for i in range(start_page - 1, end_page):
+        writer = pypdf.PdfWriter()
+        for i in range(start_page - 1, end_page):
                 writer.add_page(reader.pages[i])
             
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-            with open(output_path, 'wb') as output_file:
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
+        with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
             
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF extraído")
             
-            return FileResponse(output_path, filename="extracted_pages.pdf")
+        return FileResponse(output_path, filename="extracted_pages.pdf")
     
     except HTTPException:
         raise
@@ -1517,10 +1517,10 @@ async def compare_pdfs(request: Request, file1: UploadFile = File(...), file2: U
             if not file.filename.endswith('.pdf'):
                 raise HTTPException(status_code=400, detail="Arquivos devem ser PDF")
             
-            temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
-            with open(temp_path, "wb") as buffer:
+        temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
+        with open(temp_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            temp_paths.append(temp_path)
+        temp_paths.append(temp_path)
         
         # Extrair texto dos PDFs
         texts = []
@@ -1584,15 +1584,15 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
         import pypdf
         with open(temp_path, 'rb') as pdf_file:
             reader = pypdf.PdfReader(pdf_file)
-            writer = pypdf.PdfWriter()
-            total = len(reader.pages)
-            for i in range(total):
+        writer = pypdf.PdfWriter()
+        total = len(reader.pages)
+        for i in range(total):
                 if (i+1) not in remove_set:
                     writer.add_page(reader.pages[i])
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_removed.pdf"
-            with open(output_path, 'wb') as output_file:
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_removed.pdf"
+        with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
-            return FileResponse(output_path, filename="removed_pages.pdf")
+        return FileResponse(output_path, filename="removed_pages.pdf")
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao remover páginas: {str(e)}")
@@ -1620,10 +1620,10 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
         extract_set = set()
         for part in pages.split(','):
             part = part.strip()
-            if '-' in part:
+        if '-' in part:
                 start, end = map(int, part.split('-'))
                 extract_set.update(range(start, end+1))
-            else:
+        else:
                     extract_set.add(int(part))
         
         reader = pypdf.PdfReader(temp_path)
@@ -1640,14 +1640,14 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
             if 1 <= page_num <= total_pages:
                 writer.add_page(reader.pages[page_num - 1])
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-            with open(output_path, 'wb') as output_file:
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
+        with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF extraído")
         
-            return FileResponse(output_path, filename="extracted_pages.pdf")
+        return FileResponse(output_path, filename="extracted_pages.pdf")
     
     except HTTPException:
         raise
@@ -1686,18 +1686,18 @@ async def organize_pages(request: Request, file: UploadFile = File(...), order: 
             raise HTTPException(status_code=400, detail=f"Páginas inválidas na ordem: {invalid_pages}. PDF tem {total} páginas.")
         
         writer = pypdf.PdfWriter()
-            for idx in order_list:
+        for idx in order_list:
                 if 1 <= idx <= total:
                 writer.add_page(reader.pages[idx - 1])
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
-            with open(output_path, 'wb') as output_file:
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
+        with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF organizado")
         
-            return FileResponse(output_path, filename="organized.pdf")
+        return FileResponse(output_path, filename="organized.pdf")
     
     except HTTPException:
         raise
@@ -1734,8 +1734,8 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
             }, from_format='jpg')
         else:
             # Para múltiplas imagens, converter cada uma e depois juntar
-            pdf_paths = []
-            for img_path in temp_paths:
+        pdf_paths = []
+        for img_path in temp_paths:
                 result = convertapi.convert('pdf', {
                     'File': img_path
                 }, from_format='jpg')
@@ -1744,19 +1744,19 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
                 pdf_paths.append(pdf_temp)
             
             # Juntar os PDFs usando pypdf (ConvertAPI não suporta merge direto)
-            import pypdf
-            merger = pypdf.PdfWriter()
-            for pdf_path in pdf_paths:
+        import pypdf
+        merger = pypdf.PdfWriter()
+        for pdf_path in pdf_paths:
                 reader = pypdf.PdfReader(pdf_path)
                 for page in reader.pages:
                     merger.add_page(page)
             
     output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
-            with open(output_path, 'wb') as output_file:
+        with open(output_path, 'wb') as output_file:
                 merger.write(output_file)
             
             # Limpar PDFs temporários
-            for path in pdf_paths:
+        for path in pdf_paths:
                 if os.path.exists(path):
                     os.remove(path)
             
@@ -1905,19 +1905,19 @@ async def unlock_pdf(request: Request, file: UploadFile = File(...), password: s
         import pypdf
         
         reader = pypdf.PdfReader(temp_path, password=password)
-            writer = pypdf.PdfWriter()
+        writer = pypdf.PdfWriter()
         
-            for page in reader.pages:
+        for page in reader.pages:
                 writer.add_page(page)
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
-            with open(output_path, 'wb') as output_file:
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
+        with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF desbloqueado")
         
-            return FileResponse(output_path, filename="unlocked.pdf")
+        return FileResponse(output_path, filename="unlocked.pdf")
     
     except pypdf.errors.PdfReadError as e:
         if "password" in str(e).lower():
@@ -1951,22 +1951,22 @@ async def protect_pdf(request: Request, file: UploadFile = File(...), password: 
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-            writer = pypdf.PdfWriter()
+        writer = pypdf.PdfWriter()
         
-            for page in reader.pages:
+        for page in reader.pages:
                 writer.add_page(page)
         
         # Criptografar com senha
-            writer.encrypt(password)
+        writer.encrypt(password)
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
-            with open(output_path, 'wb') as output_file:
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
+        with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF protegido")
         
-            return FileResponse(output_path, filename="protected.pdf")
+        return FileResponse(output_path, filename="protected.pdf")
     
     except HTTPException:
         raise
@@ -2004,14 +2004,14 @@ async def add_page_numbers(request: Request, file: UploadFile = File(...)):
         writer = pypdf.PdfWriter()
         for i, page in enumerate(reader.pages):
             packet = io.BytesIO()
-            can = canvas.Canvas(packet, pagesize=letter)
-            can.setFont("Helvetica", 10)
-            can.drawString(500, 20, f"{i+1}")
-            can.save()
-            packet.seek(0)
-            watermark_reader = pypdf.PdfReader(packet)
-            page.merge_page(watermark_reader.pages[0])
-            writer.add_page(page)
+        can = canvas.Canvas(packet, pagesize=letter)
+        can.setFont("Helvetica", 10)
+        can.drawString(500, 20, f"{i+1}")
+        can.save()
+        packet.seek(0)
+        watermark_reader = pypdf.PdfReader(packet)
+        page.merge_page(watermark_reader.pages[0])
+        writer.add_page(page)
         with open(output_path, 'wb') as f:
             writer.write(f)
         return FileResponse(output_path, filename="numbered.pdf")
@@ -2046,19 +2046,19 @@ async def add_watermark(request: Request, file: UploadFile = File(...), text: st
         writer = pypdf.PdfWriter()
         for page in reader.pages:
             packet = io.BytesIO()
-            can = canvas.Canvas(packet, pagesize=letter)
-            can.setFont("Helvetica", 16)
-            can.setFillColorRGB(0.7, 0.7, 0.7)
-            can.saveState()
-            can.translate(300, 400)
-            can.rotate(30)
-            can.drawCentredString(0, 0, text)
-            can.restoreState()
-            can.save()
-            packet.seek(0)
-            watermark_reader = pypdf.PdfReader(packet)
-            page.merge_page(watermark_reader.pages[0])
-            writer.add_page(page)
+        can = canvas.Canvas(packet, pagesize=letter)
+        can.setFont("Helvetica", 16)
+        can.setFillColorRGB(0.7, 0.7, 0.7)
+        can.saveState()
+        can.translate(300, 400)
+        can.rotate(30)
+        can.drawCentredString(0, 0, text)
+        can.restoreState()
+        can.save()
+        packet.seek(0)
+        watermark_reader = pypdf.PdfReader(packet)
+        page.merge_page(watermark_reader.pages[0])
+        writer.add_page(page)
         with open(output_path, 'wb') as f:
             writer.write(f)
         return FileResponse(output_path, filename="watermarked.pdf")
