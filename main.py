@@ -118,311 +118,87 @@ async def get_frontend():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>PDF Platform - Lobios</title>
         <link rel="icon" type="image/png" href="/static/logo.png"/>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
         <style>
-            * { box-sizing: border-box; }
             :root {
                 --lobios-purple: #7b3294;
                 --lobios-purple-light: #a259c6;
-                --lobios-purple-hover: #6a2a82;
-                --lobios-bg: #f8f9fa;
-                --lobios-card: #ffffff;
-                --lobios-gray: #e9ecef;
-                --lobios-dark: #212529;
-                --lobios-text: #495057;
-                --lobios-border: #dee2e6;
+                --lobios-bg: #f8f8fa;
+                --lobios-card: #fff;
+                --lobios-gray: #e5e5e5;
+                --lobios-dark: #222;
             }
             body {
-                margin: 0; padding: 0; 
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif;
                 background: var(--lobios-bg);
                 color: var(--lobios-dark);
-                line-height: 1.6;
-            }
-            .hero-section {
-                background: linear-gradient(135deg, var(--lobios-purple) 0%, var(--lobios-purple-light) 100%);
-                color: white;
-                padding: 80px 20px 60px;
-                text-align: center;
-                margin-bottom: 60px;
-            }
-            .hero-section h1 {
-                font-size: 3.5rem;
-                font-weight: 700;
-                margin: 0 0 20px;
-                letter-spacing: -0.02em;
-            }
-            .hero-section p {
-                font-size: 1.25rem;
-                margin: 0 auto;
-                opacity: 0.95;
-                max-width: 700px;
             }
             .sidebar {
-                position: fixed; left: 0; top: 0; bottom: 0; width: 260px; 
-                background: var(--lobios-card); 
-                box-shadow: 2px 0 12px rgba(0,0,0,0.05);
-                z-index: 100;
-                overflow-y: auto;
-            }
-            .sidebar-header {
-                padding: 30px 20px;
-                border-bottom: 1px solid var(--lobios-border);
+                position: fixed; left: 0; top: 0; bottom: 0; width: 220px; background: #fff;
+                color: var(--lobios-purple); display: flex; flex-direction: column; align-items: center; padding-top: 30px; z-index: 2; border-right: 1.5px solid #eee;
             }
             .sidebar img {
-                width: 160px; display: block; margin: 0 auto;
+                width: 140px; margin-bottom: 30px; filter: none;
             }
             .sidebar nav {
-                padding: 20px 0;
+                width: 100%;
             }
             .sidebar nav a {
-                display: block; 
-                color: var(--lobios-text); 
-                text-decoration: none; 
-                padding: 14px 24px; 
-                font-size: 15px;
-                font-weight: 500;
-                transition: all 0.2s ease;
-                border-left: 3px solid transparent;
+                display: block; color: var(--lobios-purple); text-decoration: none; padding: 14px 30px; font-size: 16px;
+                border-left: 4px solid transparent; transition: background 0.2s, border 0.2s; font-weight: 500;
             }
-            .sidebar nav a:hover {
-                background: rgba(123, 50, 148, 0.05);
+            .sidebar nav a.active, .sidebar nav a:hover {
+                background: #f3eafd; border-left: 4px solid var(--lobios-purple);
                 color: var(--lobios-purple);
-            }
-            .sidebar nav a.active {
-                background: rgba(123, 50, 148, 0.1);
-                color: var(--lobios-purple);
-                border-left-color: var(--lobios-purple);
-                font-weight: 600;
             }
             .main {
-                margin-left: 260px; 
-                min-height: 100vh;
+                margin-left: 220px; min-height: 100vh;
+            }
+            .topbar {
+                background: #fff; height: 64px; display: flex; align-items: center; justify-content: flex-end;
+                box-shadow: 0 2px 8px rgba(123,50,148,0.07); padding: 0 40px; position: sticky; top: 0; z-index: 1;
+            }
+            .topbar .user {
+                font-weight: 500; color: var(--lobios-purple); display: flex; align-items: center;
+            }
+            .topbar .user:before {
+                content: '\1F464'; font-size: 22px; margin-right: 8px;
+            }
+            .topbar .impact {
+                font-family: 'Quicksand', 'Montserrat', 'Segoe UI', Arial, sans-serif;
+                font-weight: 700;
+                color: var(--lobios-purple);
+                font-size: 1.35rem;
+                letter-spacing: 0.01em;
+                text-align: right;
+                width: 100%;
+                margin-top: 2px;
             }
             .container {
-                max-width: 1400px; 
-                margin: 0 auto; 
-                padding: 40px 30px;
+                max-width: 1200px; margin: 30px auto; padding: 0 20px;
             }
-            .section-header {
-                margin-bottom: 40px;
-            }
-            .section-header h2 {
-                color: var(--lobios-purple);
-                margin: 0 0 12px; 
-                font-size: 2.5rem;
-                font-weight: 700;
-                letter-spacing: -0.02em;
-            }
-            .section-header p {
-                color: var(--lobios-text);
-                font-size: 1.1rem;
-                margin: 0;
+            .header h1 {
+                color: var(--lobios-purple); margin-bottom: 10px; font-size: 2.2rem;
             }
             .tools-grid {
-                display: grid; 
-                grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
-                gap: 28px;
+                display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;
             }
             .tool-card {
-                background: var(--lobios-card); 
-                border-radius: 16px; 
-                padding: 32px 28px; 
-                box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
-                display: flex; 
-                flex-direction: column; 
-                transition: all 0.3s ease;
-                border: 1px solid var(--lobios-border);
-            }
-            .tool-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 4px 16px rgba(123,50,148,0.12), 0 12px 32px rgba(0,0,0,0.08);
+                background: var(--lobios-card); border-radius: 12px; padding: 28px 22px; box-shadow: 0 2px 12px rgba(123,50,148,0.08);
+                display: flex; flex-direction: column; align-items: stretch;
             }
             .tool-card h3 {
-                color: var(--lobios-purple); 
-                margin: 0 0 20px; 
-                font-size: 1.4rem; 
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 10px;
+                color: var(--lobios-purple); margin-bottom: 18px; font-size: 19px; font-weight: 600;
             }
-            .tool-card.disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-            }
-            .tool-card.disabled:hover {
-                transform: none;
-            }
-            .file-input { 
-                width: 100%; 
-                padding: 16px; 
-                border: 2px dashed var(--lobios-purple-light); 
-                border-radius: 12px; 
-                margin-bottom: 16px; 
-                cursor: pointer; 
-                background: rgba(123, 50, 148, 0.03);
-                font-size: 14px;
-                transition: all 0.2s;
-            }
-            .file-input:hover { 
-                border-color: var(--lobios-purple); 
-                background: rgba(123, 50, 148, 0.06);
-            }
-            .btn { 
-                background: var(--lobios-purple); 
-                color: white; 
-                border: none; 
-                padding: 16px 24px; 
-                border-radius: 12px; 
-                cursor: pointer; 
-                width: 100%; 
-                font-size: 16px; 
-                font-weight: 600; 
-                transition: all 0.2s;
-                box-shadow: 0 2px 8px rgba(123,50,148,0.2);
-            }
-            .btn:hover { 
-                background: var(--lobios-purple-hover); 
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(123,50,148,0.3);
-            }
-            .btn:active {
-                transform: translateY(0);
-            }
-            .btn:disabled { 
-                background: #adb5bd; 
-                cursor: not-allowed;
-                box-shadow: none;
-            }
-            .btn:disabled:hover {
-                transform: none;
-            }
-            input[type="text"], input[type="number"], input[type="password"] {
-                width: 100%; 
-                padding: 14px 16px; 
-                margin: 8px 0 16px; 
-                border: 1.5px solid var(--lobios-border); 
-                border-radius: 10px; 
-                font-size: 15px;
-                transition: all 0.2s;
-                font-family: inherit;
-            }
-            input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus {
-                outline: none;
-                border-color: var(--lobios-purple);
-                box-shadow: 0 0 0 3px rgba(123,50,148,0.1);
-            }
-            .result { 
-                margin-top: 20px; 
-                padding: 16px; 
-                background: rgba(123, 50, 148, 0.08); 
-                border-radius: 10px; 
-                display: none; 
-                color: var(--lobios-dark);
-                border: 1px solid rgba(123, 50, 148, 0.15);
-            }
-            .result a {
-                color: var(--lobios-purple);
-                font-weight: 600;
-                text-decoration: none;
-            }
-            .result a:hover {
-                text-decoration: underline;
-            }
-            .error { 
-                background: #fee; 
-                color: #c33; 
-                border-color: #fcc;
-            }
-            .loading { 
-                display: none; 
-                text-align: center; 
-                margin-top: 16px;
-                color: var(--lobios-purple);
-                font-weight: 500;
-            }
-            .privacy-btn {
-                position: fixed;
-                right: 30px;
-                bottom: 30px;
-                z-index: 99;
-                background: var(--lobios-card);
-                color: var(--lobios-purple);
-                border: 2px solid var(--lobios-purple);
-                padding: 12px 24px;
-                border-radius: 30px;
-                font-weight: 600;
-                box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-                cursor: pointer;
-                transition: all 0.2s;
-                font-size: 14px;
-            }
-            .privacy-btn:hover {
-                background: var(--lobios-purple);
-                color: white;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(123,50,148,0.3);
-            }
-            .modal-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: rgba(0,0,0,0.5);
-                z-index: 1000;
-                align-items: center;
-                justify-content: center;
-                backdrop-filter: blur(4px);
-            }
-            .modal-content {
-                background: var(--lobios-card);
-                border-radius: 20px;
-                max-width: 900px;
-                width: 95vw;
-                padding: 40px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                position: relative;
-                max-height: 90vh;
-                overflow-y: auto;
-            }
-            .modal-close {
-                position: absolute;
-                top: 20px;
-                right: 24px;
-                font-size: 32px;
-                cursor: pointer;
-                color: var(--lobios-text);
-                line-height: 1;
-                transition: color 0.2s;
-            }
-            .modal-close:hover {
-                color: var(--lobios-purple);
-            }
-            @media (max-width: 1024px) {
-                .sidebar { width: 200px; }
-                .main { margin-left: 200px; }
-                .hero-section h1 { font-size: 2.5rem; }
-                .tools-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-            }
-            @media (max-width: 768px) {
-                .sidebar { 
-                    transform: translateX(-100%);
-                    transition: transform 0.3s;
-                }
-                .sidebar.open {
-                    transform: translateX(0);
-                }
-                .main { margin-left: 0; }
-                .hero-section { padding: 60px 20px 40px; }
-                .hero-section h1 { font-size: 2rem; }
-                .hero-section p { font-size: 1rem; }
-                .container { padding: 20px 15px; }
-                .tools-grid { grid-template-columns: 1fr; gap: 20px; }
-                .section-header h2 { font-size: 2rem; }
-            }
+            .file-input { width: 100%; padding: 10px; border: 2px dashed var(--lobios-purple-light); border-radius: 6px; margin-bottom: 15px; cursor: pointer; background: #faf7fc; }
+            .file-input:hover { border-color: var(--lobios-purple); }
+            .btn { background: var(--lobios-purple); color: white; border: none; padding: 13px 0; border-radius: 6px; cursor: pointer; width: 100%; font-size: 15px; font-weight: 500; transition: background 0.2s; }
+            .btn:hover { background: var(--lobios-purple-light); }
+            .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+            .result { margin-top: 15px; padding: 10px; background: #e6e6fa; border-radius: 6px; display: none; color: var(--lobios-dark); }
+            .error { background: #f8d7da; color: #721c24; }
+            .loading { display: none; text-align: center; margin-top: 10px; }
+            input[type="number"] { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
             @media (max-width: 900px) {
                 .sidebar { width: 60px; padding-top: 18px; }
                 .sidebar img { width: 38px; margin-bottom: 18px; }
@@ -433,9 +209,7 @@ async def get_frontend():
     </head>
     <body>
         <div class="sidebar">
-            <div class="sidebar-header">
             <img src="/static/logo.png" alt="Lobios">
-            </div>
             <nav id="sidebar-categories">
                 <a href="#" class="category-link active" data-category="organizar">Organizar PDF</a>
                 <a href="#" class="category-link" data-category="otimizar">Otimizar PDF</a>
@@ -446,14 +220,13 @@ async def get_frontend():
             </nav>
         </div>
         <div class="main">
-            <div class="hero-section">
-                <h1>Todas as ferramentas PDF que você precisa em um só lugar</h1>
-                <p>Ferramentas online 100% gratuitas e fáceis de usar! Junte, divida, comprima, converta, rotacione, desbloqueie e adicione marca d'água em PDFs com apenas alguns cliques.</p>
+            <div class="topbar">
+                <div class="impact">Ferramentas online para facilitar o manuseio de arquivos PDF com segurança e praticidade.</div>
             </div>
             <div class="container">
-                <div class="section-header">
-                    <h2 id="category-title">Organizar PDF</h2>
-                    <p id="category-desc">Manipule e organize seus arquivos PDF facilmente</p>
+                <div class="header">
+                    <h1 id="category-title">Organizar PDF</h1>
+                    <p id="category-desc">Manipule seus arquivos PDF facilmente</p>
                 </div>
                 <div id="category-functions">
                     <!-- ORGANIZAR PDF -->
@@ -645,33 +418,33 @@ async def get_frontend():
             </div>
         </div>
         <!-- Botão Política de Privacidade -->
-        <button id="privacyBtn" class="privacy-btn">Política de Privacidade</button>
+        <button id="privacyBtn" style="position:fixed;right:24px;bottom:24px;z-index:99;background:#fff;color:var(--lobios-purple);border:1.5px solid #eee;padding:10px 22px;border-radius:24px;font-weight:600;box-shadow:0 2px 8px rgba(123,50,148,0.07);cursor:pointer;">Política de Privacidade</button>
         <!-- Modal Política -->
-        <div id="privacyModal" class="modal-overlay">
-            <div class="modal-content">
-                <span id="closePrivacy" class="modal-close">&times;</span>
-                <h2 style="color:var(--lobios-purple);margin:0 0 12px 0;font-size:2rem;font-weight:700;">Políticas de segurança e privacidade de dados</h2>
-                <p style="margin-bottom:32px;color:var(--lobios-text);font-size:1.1rem;">Informações detalhadas sobre a estrutura de privacidade e segurança do PDF Platform Lobios.</p>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;">
-                    <div style="background:rgba(123,50,148,0.05);border-radius:16px;padding:28px 20px;text-align:center;border:1px solid rgba(123,50,148,0.1);">
-                        <div style="font-size:48px;margin-bottom:12px;">🔒</div>
-                        <h4 style="color:var(--lobios-purple);margin:0 0 12px 0;font-size:1.2rem;font-weight:600;">Segurança</h4>
-                        <p style="font-size:15px;color:var(--lobios-text);margin:0;line-height:1.6;">Todos os arquivos enviados são processados de forma segura e excluídos automaticamente após a conversão. Não armazenamos, visualizamos ou compartilhamos seus documentos.</p>
+        <div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.18);z-index:100;align-items:center;justify-content:center;">
+            <div style="background:#fff;border-radius:18px;max-width:900px;width:95vw;padding:36px 28px;box-shadow:0 4px 32px rgba(0,0,0,0.13);position:relative;">
+                <span id="closePrivacy" style="position:absolute;top:18px;right:24px;font-size:28px;cursor:pointer;color:#aaa;">&times;</span>
+                <h2 style="color:var(--lobios-purple);margin-bottom:8px;">Políticas de segurança e privacidade de dados</h2>
+                <p style="margin-bottom:28px;color:#444;">Informações detalhadas sobre a estrutura de privacidade e segurança do PDF Platform Lobios.</p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:22px;">
+                    <div style="background:#faf7fc;border-radius:12px;padding:22px 16px;text-align:center;">
+                        <div style="font-size:36px;">🔒</div>
+                        <h4 style="color:var(--lobios-purple);margin:10px 0 8px 0;">Segurança</h4>
+                        <p style="font-size:15px;color:#333;">Todos os arquivos enviados são processados de forma segura e excluídos automaticamente após a conversão. Não armazenamos, visualizamos ou compartilhamos seus documentos.</p>
                     </div>
-                    <div style="background:rgba(123,50,148,0.05);border-radius:16px;padding:28px 20px;text-align:center;border:1px solid rgba(123,50,148,0.1);">
-                        <div style="font-size:48px;margin-bottom:12px;">🛡️</div>
-                        <h4 style="color:var(--lobios-purple);margin:0 0 12px 0;font-size:1.2rem;font-weight:600;">Privacidade</h4>
-                        <p style="font-size:15px;color:var(--lobios-text);margin:0;line-height:1.6;">Sua privacidade é prioridade. Os arquivos são eliminados dos nossos servidores logo após o processamento, garantindo total confidencialidade.</p>
+                    <div style="background:#faf7fc;border-radius:12px;padding:22px 16px;text-align:center;">
+                        <div style="font-size:36px;">🛡️</div>
+                        <h4 style="color:var(--lobios-purple);margin:10px 0 8px 0;">Privacidade</h4>
+                        <p style="font-size:15px;color:#333;">Sua privacidade é prioridade. Os arquivos são eliminados dos nossos servidores logo após o processamento, garantindo total confidencialidade.</p>
                     </div>
-                    <div style="background:rgba(123,50,148,0.05);border-radius:16px;padding:28px 20px;text-align:center;border:1px solid rgba(123,50,148,0.1);">
-                        <div style="font-size:48px;margin-bottom:12px;">📄</div>
-                        <h4 style="color:var(--lobios-purple);margin:0 0 12px 0;font-size:1.2rem;font-weight:600;">Termos</h4>
-                        <p style="font-size:15px;color:var(--lobios-text);margin:0;line-height:1.6;">Ao utilizar o PDF Platform Lobios, você concorda com nossos termos: não armazenamos arquivos, não compartilhamos dados e não utilizamos seus documentos para nenhum outro fim.</p>
+                    <div style="background:#faf7fc;border-radius:12px;padding:22px 16px;text-align:center;">
+                        <div style="font-size:36px;">📄</div>
+                        <h4 style="color:var(--lobios-purple);margin:10px 0 8px 0;">Termos</h4>
+                        <p style="font-size:15px;color:#333;">Ao utilizar o PDF Platform Lobios, você concorda com nossos termos: não armazenamos arquivos, não compartilhamos dados e não utilizamos seus documentos para nenhum outro fim.</p>
                     </div>
-                    <div style="background:rgba(123,50,148,0.05);border-radius:16px;padding:28px 20px;text-align:center;border:1px solid rgba(123,50,148,0.1);">
-                        <div style="font-size:48px;margin-bottom:12px;">🍪</div>
-                        <h4 style="color:var(--lobios-purple);margin:0 0 12px 0;font-size:1.2rem;font-weight:600;">Cookies</h4>
-                        <p style="font-size:15px;color:var(--lobios-text);margin:0;line-height:1.6;">Utilizamos apenas cookies essenciais para o funcionamento da plataforma. Não rastreamos, não vendemos e não utilizamos cookies para fins de marketing.</p>
+                    <div style="background:#faf7fc;border-radius:12px;padding:22px 16px;text-align:center;">
+                        <div style="font-size:36px;">🍪</div>
+                        <h4 style="color:var(--lobios-purple);margin:10px 0 8px 0;">Cookies</h4>
+                        <p style="font-size:15px;color:#333;">Utilizamos apenas cookies essenciais para o funcionamento da plataforma. Não rastreamos, não vendemos e não utilizamos cookies para fins de marketing.</p>
                     </div>
                 </div>
             </div>
@@ -1435,19 +1208,19 @@ async def split_pdf(request: Request, file: UploadFile = File(...), start_page: 
         
         if start_page < 1 or end_page > total_pages or start_page > end_page:
             raise HTTPException(status_code=400, detail=f"Páginas inválidas. PDF tem {total_pages} páginas.")
-            
-            writer = pypdf.PdfWriter()
-            for i in range(start_page - 1, end_page):
-                writer.add_page(reader.pages[i])
-            
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-            
+        
+        writer = pypdf.PdfWriter()
+        for i in range(start_page - 1, end_page):
+            writer.add_page(reader.pages[i])
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+        
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF extraído")
-            
-            return FileResponse(output_path, filename="extracted_pages.pdf")
+        
+        return FileResponse(output_path, filename="extracted_pages.pdf")
     
     except HTTPException:
         raise
@@ -1491,11 +1264,11 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
         with open(output_path, 'wb') as output_file:
             writer.write(output_file)
-            
+        
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF comprimido")
         
-            return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
     
     except HTTPException:
         raise
@@ -1575,6 +1348,15 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
             else:
                 remove_set.add(int(part))
         
+        # Para remover páginas, precisamos extrair as páginas que queremos manter
+        # A ConvertAPI permite especificar PageRange, então vamos usar split múltiplas vezes
+        # ou usar uma abordagem diferente - vamos extrair todas as páginas exceto as removidas
+        
+        # Nota: ConvertAPI pode não ter uma função direta de remover páginas
+        # Vamos usar uma abordagem alternativa: extrair as páginas que queremos manter
+        # Primeiro, precisamos saber o total de páginas
+        # Como alternativa, podemos usar split para cada intervalo de páginas a manter
+        
         # Nota: ConvertAPI não tem função direta de remover páginas específicas
         # Usando pypdf para esta funcionalidade específica
         import pypdf
@@ -1636,14 +1418,14 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
             if 1 <= page_num <= total_pages:
                 writer.add_page(reader.pages[page_num - 1])
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF extraído")
         
-            return FileResponse(output_path, filename="extracted_pages.pdf")
+        return FileResponse(output_path, filename="extracted_pages.pdf")
     
     except HTTPException:
         raise
@@ -1693,7 +1475,7 @@ async def organize_pages(request: Request, file: UploadFile = File(...), order: 
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF organizado")
         
-            return FileResponse(output_path, filename="organized.pdf")
+        return FileResponse(output_path, filename="organized.pdf")
     
     except HTTPException:
         raise
@@ -1717,11 +1499,11 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
     temp_paths = []
     try:
         # Salvar arquivos temporários
-    for file in files:
-        temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
-        with open(temp_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        temp_paths.append(temp_path)
+        for file in files:
+            temp_path = f"{UPLOAD_DIR}/{uuid.uuid4()}_{file.filename}"
+            with open(temp_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            temp_paths.append(temp_path)
         
         # Se houver múltiplas imagens, usar merge. Se uma só, converter diretamente
         if len(temp_paths) == 1:
@@ -1747,7 +1529,7 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
                 for page in reader.pages:
                     merger.add_page(page)
             
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
+            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
             with open(output_path, 'wb') as output_file:
                 merger.write(output_file)
             
@@ -1756,7 +1538,7 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
                 if os.path.exists(path):
                     os.remove(path)
             
-    return FileResponse(output_path, filename="imagens.pdf")
+            return FileResponse(output_path, filename="imagens.pdf")
         
         # Se chegou aqui, é uma única imagem
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
@@ -1788,10 +1570,10 @@ async def word_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='docx' if file.filename.endswith('.docx') else 'doc')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_word2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_word2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.docx', '.pdf').replace('.doc', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.docx', '.pdf').replace('.doc', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter Word: {str(e)}")
@@ -1816,10 +1598,10 @@ async def excel_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='xlsx' if file.filename.endswith('.xlsx') else 'xls')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_excel2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_excel2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.xlsx', '.pdf').replace('.xls', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter Excel: {str(e)}")
@@ -1844,10 +1626,10 @@ async def ppt_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='pptx' if file.filename.endswith('.pptx') else 'ppt')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_ppt2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_ppt2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.pptx', '.pdf').replace('.ppt', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.pptx', '.pdf').replace('.ppt', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter PowerPoint: {str(e)}")
@@ -1872,10 +1654,10 @@ async def html_to_pdf(request: Request, file: UploadFile = File(...)):
             'File': temp_path
         }, from_format='html')
         
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_html2pdf.pdf"
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_html2pdf.pdf"
         result.file.save(output_path)
         
-    return FileResponse(output_path, filename=file.filename.replace('.html', '.pdf').replace('.htm', '.pdf'))
+        return FileResponse(output_path, filename=file.filename.replace('.html', '.pdf').replace('.htm', '.pdf'))
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao converter HTML: {str(e)}")
@@ -1901,19 +1683,19 @@ async def unlock_pdf(request: Request, file: UploadFile = File(...), password: s
         import pypdf
         
         reader = pypdf.PdfReader(temp_path, password=password)
-            writer = pypdf.PdfWriter()
+        writer = pypdf.PdfWriter()
         
-            for page in reader.pages:
-                writer.add_page(page)
+        for page in reader.pages:
+            writer.add_page(page)
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF desbloqueado")
         
-            return FileResponse(output_path, filename="unlocked.pdf")
+        return FileResponse(output_path, filename="unlocked.pdf")
     
     except pypdf.errors.PdfReadError as e:
         if "password" in str(e).lower():
@@ -1947,22 +1729,22 @@ async def protect_pdf(request: Request, file: UploadFile = File(...), password: 
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-            writer = pypdf.PdfWriter()
+        writer = pypdf.PdfWriter()
         
-            for page in reader.pages:
-                writer.add_page(page)
+        for page in reader.pages:
+            writer.add_page(page)
         
         # Criptografar com senha
-            writer.encrypt(password)
+        writer.encrypt(password)
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF protegido")
         
-            return FileResponse(output_path, filename="protected.pdf")
+        return FileResponse(output_path, filename="protected.pdf")
     
     except HTTPException:
         raise
