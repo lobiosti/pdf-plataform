@@ -1750,7 +1750,7 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
                 for page in reader.pages:
                     merger.add_page(page)
             
-    output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
+            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
             with open(output_path, 'wb') as output_file:
                 merger.write(output_file)
             
