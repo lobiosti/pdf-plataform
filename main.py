@@ -1560,14 +1560,14 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
     
     try:
         # Parse páginas a remover e criar range de páginas a manter
-            remove_set = set()
-            for part in pages.split(','):
+        remove_set = set()
+        for part in pages.split(','):
             part = part.strip()
-                if '-' in part:
-                    start, end = map(int, part.split('-'))
-                    remove_set.update(range(start, end+1))
-                else:
-                    remove_set.add(int(part))
+            if '-' in part:
+                start, end = map(int, part.split('-'))
+                remove_set.update(range(start, end+1))
+            else:
+                remove_set.add(int(part))
         
         # Para remover páginas, precisamos extrair as páginas que queremos manter
         # A ConvertAPI permite especificar PageRange, então vamos usar split múltiplas vezes
