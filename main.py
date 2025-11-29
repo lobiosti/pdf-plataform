@@ -1199,19 +1199,36 @@ async def split_pdf(request: Request, file: UploadFile = File(...), start_page: 
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        # Dividir PDF usando ConvertAPI
-        result = convertapi.convert('pdf', {
-            'File': temp_path,
-            'PageRange': f'{start_page}-{end_page}'
-        })
+        # Nota: ConvertAPI pode não suportar PageRange diretamente
+        # Usando pypdf para dividir PDF (operação simples)
+        import pypdf
+        
+        reader = pypdf.PdfReader(temp_path)
+        total_pages = len(reader.pages)
+        
+        if start_page < 1 or end_page > total_pages or start_page > end_page:
+            raise HTTPException(status_code=400, detail=f"Páginas inválidas. PDF tem {total_pages} páginas.")
+        
+        writer = pypdf.PdfWriter()
+        for i in range(start_page - 1, end_page):
+            writer.add_page(reader.pages[i])
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-        result.file.save(output_path)
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+        
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar PDF extraído")
         
         return FileResponse(output_path, filename="extracted_pages.pdf")
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao dividir PDF: {str(e)}")
+        import traceback
+        error_detail = f"Erro ao dividir PDF: {str(e)}"
+        print(f"Erro ao dividir PDF: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1231,20 +1248,35 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        # Comprimir PDF usando ConvertAPI
-        # A ConvertAPI comprime automaticamente durante a conversão
-        # Podemos usar parâmetros de otimização se disponíveis
-        result = convertapi.convert('pdf', {
-            'File': temp_path
-        }, from_format='pdf')
+        # Nota: ConvertAPI não comprime PDF diretamente
+        # Usando pypdf para comprimir (remove objetos duplicados e otimiza)
+        import pypdf
+        
+        reader = pypdf.PdfReader(temp_path)
+        writer = pypdf.PdfWriter()
+        
+        for page in reader.pages:
+            writer.add_page(page)
+        
+        # Compressão básica - remove objetos duplicados
+        writer.compress_identical_objects()
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
-        result.file.save(output_path)
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+        
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar PDF comprimido")
         
         return FileResponse(output_path, filename=file.filename.replace('.pdf', '_compressed.pdf'))
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao comprimir PDF: {str(e)}")
+        import traceback
+        error_detail = f"Erro ao comprimir PDF: {str(e)}"
+        print(f"Erro ao comprimir PDF: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1358,6 +1390,10 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
         shutil.copyfileobj(file.file, buffer)
     
     try:
+        # Nota: ConvertAPI pode não suportar PageRange diretamente
+        # Usando pypdf para extrair páginas (operação simples)
+        import pypdf
+        
         # Parse páginas a extrair
         extract_set = set()
         for part in pages.split(','):
@@ -1368,37 +1404,36 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
             else:
                 extract_set.add(int(part))
         
-        # Converter range para formato da ConvertAPI (ex: "1-3,5,7-9")
-        page_ranges = []
+        reader = pypdf.PdfReader(temp_path)
+        total_pages = len(reader.pages)
+        
+        # Validar páginas
+        invalid_pages = [p for p in extract_set if p < 1 or p > total_pages]
+        if invalid_pages:
+            raise HTTPException(status_code=400, detail=f"Páginas inválidas: {invalid_pages}. PDF tem {total_pages} páginas.")
+        
+        writer = pypdf.PdfWriter()
         sorted_pages = sorted(extract_set)
-        i = 0
-        while i < len(sorted_pages):
-            start = sorted_pages[i]
-            end = start
-            while i + 1 < len(sorted_pages) and sorted_pages[i + 1] == end + 1:
-                end = sorted_pages[i + 1]
-                i += 1
-            if start == end:
-                page_ranges.append(str(start))
-            else:
-                page_ranges.append(f"{start}-{end}")
-            i += 1
-        
-        page_range_str = ','.join(page_ranges)
-        
-        # Extrair páginas usando ConvertAPI
-        result = convertapi.convert('pdf', {
-            'File': temp_path,
-            'PageRange': page_range_str
-        }, from_format='pdf')
+        for page_num in sorted_pages:
+            if 1 <= page_num <= total_pages:
+                writer.add_page(reader.pages[page_num - 1])
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_extracted.pdf"
-        result.file.save(output_path)
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+        
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar PDF extraído")
         
         return FileResponse(output_path, filename="extracted_pages.pdf")
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao extrair páginas: {str(e)}")
+        import traceback
+        error_detail = f"Erro ao extrair páginas: {str(e)}"
+        print(f"Erro ao extrair páginas: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1641,19 +1676,36 @@ async def unlock_pdf(request: Request, file: UploadFile = File(...), password: s
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        # Desbloquear PDF usando ConvertAPI
-        result = convertapi.convert('pdf', {
-            'File': temp_path,
-            'UserPassword': password
-        }, from_format='pdf')
+        # Nota: ConvertAPI pode não suportar desbloquear PDF diretamente
+        # Usando pypdf para desbloquear (lê com senha e salva sem senha)
+        import pypdf
+        
+        reader = pypdf.PdfReader(temp_path, password=password)
+        writer = pypdf.PdfWriter()
+        
+        for page in reader.pages:
+            writer.add_page(page)
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
-        result.file.save(output_path)
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+        
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar PDF desbloqueado")
         
         return FileResponse(output_path, filename="unlocked.pdf")
     
+    except pypdf.errors.PdfReadError as e:
+        if "password" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Senha incorreta")
+        raise HTTPException(status_code=500, detail=f"Erro ao ler PDF: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao desbloquear PDF: {str(e)}")
+        import traceback
+        error_detail = f"Erro ao desbloquear PDF: {str(e)}"
+        print(f"Erro ao desbloquear PDF: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1670,19 +1722,35 @@ async def protect_pdf(request: Request, file: UploadFile = File(...), password: 
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        # Proteger PDF usando ConvertAPI
-        result = convertapi.convert('pdf', {
-            'File': temp_path,
-            'UserPassword': password
-        }, from_format='pdf')
+        # Nota: ConvertAPI pode não suportar proteger PDF diretamente
+        # Usando pypdf para proteger (criptografa com senha)
+        import pypdf
+        
+        reader = pypdf.PdfReader(temp_path)
+        writer = pypdf.PdfWriter()
+        
+        for page in reader.pages:
+            writer.add_page(page)
+        
+        # Criptografar com senha
+        writer.encrypt(password)
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
-        result.file.save(output_path)
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
+        
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar PDF protegido")
         
         return FileResponse(output_path, filename="protected.pdf")
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao proteger PDF: {str(e)}")
+        import traceback
+        error_detail = f"Erro ao proteger PDF: {str(e)}"
+        print(f"Erro ao proteger PDF: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
