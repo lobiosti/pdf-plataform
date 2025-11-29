@@ -39,13 +39,26 @@ def get_convertapi_secret():
     """Obtém a chave da ConvertAPI, tentando ler novamente a variável de ambiente"""
     secret = os.environ.get("CONVERTAPI_SECRET")
     if secret:
-        # Configurar tanto api_secret quanto api_credentials para garantir compatibilidade
+        # A biblioteca ConvertAPI usa api_secret como propriedade que define api_credentials internamente
         convertapi.api_secret = secret
-        # A biblioteca pode usar api_credentials internamente
-        if hasattr(convertapi, 'api_credentials'):
-            convertapi.api_credentials = secret
-        # Também tentar configurar via variável de ambiente diretamente
-        os.environ['CONVERTAPI_SECRET'] = secret
+        
+        # Verificar se api_credentials foi configurado automaticamente
+        # Se não, tentar configurar manualmente
+        try:
+            import convertapi.client
+            # A biblioteca pode usar convertapi.client.api_credentials
+            if not hasattr(convertapi.client, 'api_credentials') or convertapi.client.api_credentials is None:
+                # Tentar configurar diretamente no módulo client
+                convertapi.client.api_credentials = secret
+        except Exception as e:
+            print(f"Erro ao configurar api_credentials no client: {e}")
+        
+        # Também tentar configurar no módulo principal se existir
+        try:
+            if hasattr(convertapi, 'api_credentials'):
+                convertapi.api_credentials = secret
+        except:
+            pass
     return secret
 
 CONVERTAPI_SECRET = get_convertapi_secret()
@@ -54,6 +67,13 @@ if not CONVERTAPI_SECRET:
 else:
     # Garantir que está configurado corretamente
     print(f"ConvertAPI configurada: {CONVERTAPI_SECRET[:10]}...")
+    # Verificar se api_credentials está configurado
+    try:
+        import convertapi.client
+        if hasattr(convertapi.client, 'api_credentials'):
+            print(f"api_credentials no client: {convertapi.client.api_credentials is not None}")
+    except:
+        pass
 
 # Configuração do Telegram
 # IMPORTANTE: Configure as variáveis de ambiente TELEGRAM_TOKEN e TELEGRAM_CHAT_ID no Railway
