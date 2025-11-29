@@ -1583,15 +1583,15 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
         # Usando pypdf para esta funcionalidade específica
             import pypdf
             with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            writer = pypdf.PdfWriter()
-            total = len(reader.pages)
-            for i in range(total):
-                if (i+1) not in remove_set:
-                    writer.add_page(reader.pages[i])
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_removed.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+                reader = pypdf.PdfReader(pdf_file)
+                writer = pypdf.PdfWriter()
+                total = len(reader.pages)
+                for i in range(total):
+                    if (i+1) not in remove_set:
+                        writer.add_page(reader.pages[i])
+                output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_removed.pdf"
+                with open(output_path, 'wb') as output_file:
+                    writer.write(output_file)
             return FileResponse(output_path, filename="removed_pages.pdf")
     
     except Exception as e:
