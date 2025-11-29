@@ -1581,7 +1581,7 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
         
         # Nota: ConvertAPI não tem função direta de remover páginas específicas
         # Usando pypdf para esta funcionalidade específica
-        import pypdf
+            import pypdf
         with open(temp_path, 'rb') as pdf_file:
             reader = pypdf.PdfReader(pdf_file)
             writer = pypdf.PdfWriter()
