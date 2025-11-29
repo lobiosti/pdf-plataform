@@ -1481,16 +1481,16 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         
         reader = pypdf.PdfReader(temp_path)
         writer = pypdf.PdfWriter()
-            
-            for page in reader.pages:
-                writer.add_page(page)
-            
+        
+        for page in reader.pages:
+            writer.add_page(page)
+        
         # Compressão básica - remove objetos duplicados
-            writer.compress_identical_objects()
-            
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+        writer.compress_identical_objects()
+        
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
             
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF comprimido")
