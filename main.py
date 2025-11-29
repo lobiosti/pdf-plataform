@@ -1480,17 +1480,17 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-        writer = pypdf.PdfWriter()
-        
-        for page in reader.pages:
-            writer.add_page(page)
-        
+            writer = pypdf.PdfWriter()
+            
+            for page in reader.pages:
+                writer.add_page(page)
+            
         # Compressão básica - remove objetos duplicados
-        writer.compress_identical_objects()
-        
-        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
+            writer.compress_identical_objects()
+            
+            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
             
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF comprimido")
@@ -1566,14 +1566,14 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
     
     try:
         # Parse páginas a remover e criar range de páginas a manter
-        remove_set = set()
-        for part in pages.split(','):
+            remove_set = set()
+            for part in pages.split(','):
             part = part.strip()
-            if '-' in part:
-                start, end = map(int, part.split('-'))
-                remove_set.update(range(start, end+1))
-            else:
-                remove_set.add(int(part))
+                if '-' in part:
+                    start, end = map(int, part.split('-'))
+                    remove_set.update(range(start, end+1))
+                else:
+                    remove_set.add(int(part))
         
         # Nota: ConvertAPI não tem função direta de remover páginas específicas
         # Usando pypdf para esta funcionalidade específica
@@ -1613,14 +1613,14 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
         import pypdf
         
         # Parse páginas a extrair
-        extract_set = set()
-        for part in pages.split(','):
+            extract_set = set()
+            for part in pages.split(','):
             part = part.strip()
-            if '-' in part:
-                start, end = map(int, part.split('-'))
-                extract_set.update(range(start, end+1))
-            else:
-                extract_set.add(int(part))
+                if '-' in part:
+                    start, end = map(int, part.split('-'))
+                    extract_set.update(range(start, end+1))
+                else:
+                    extract_set.add(int(part))
         
         reader = pypdf.PdfReader(temp_path)
         total_pages = len(reader.pages)
