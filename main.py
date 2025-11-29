@@ -1904,19 +1904,19 @@ async def unlock_pdf(request: Request, file: UploadFile = File(...), password: s
         import pypdf
         
         reader = pypdf.PdfReader(temp_path, password=password)
-            writer = pypdf.PdfWriter()
+        writer = pypdf.PdfWriter()
         
-            for page in reader.pages:
-                writer.add_page(page)
+        for page in reader.pages:
+            writer.add_page(page)
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_unlocked.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF desbloqueado")
         
-            return FileResponse(output_path, filename="unlocked.pdf")
+        return FileResponse(output_path, filename="unlocked.pdf")
     
     except pypdf.errors.PdfReadError as e:
         if "password" in str(e).lower():
@@ -1950,22 +1950,22 @@ async def protect_pdf(request: Request, file: UploadFile = File(...), password: 
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-            writer = pypdf.PdfWriter()
+        writer = pypdf.PdfWriter()
         
-            for page in reader.pages:
-                writer.add_page(page)
+        for page in reader.pages:
+            writer.add_page(page)
         
         # Criptografar com senha
-            writer.encrypt(password)
+        writer.encrypt(password)
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_protected.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF protegido")
         
-            return FileResponse(output_path, filename="protected.pdf")
+        return FileResponse(output_path, filename="protected.pdf")
     
     except HTTPException:
         raise
