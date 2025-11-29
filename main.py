@@ -1685,13 +1685,13 @@ async def organize_pages(request: Request, file: UploadFile = File(...), order: 
             raise HTTPException(status_code=400, detail=f"Páginas inválidas na ordem: {invalid_pages}. PDF tem {total} páginas.")
         
         writer = pypdf.PdfWriter()
-            for idx in order_list:
-                if 1 <= idx <= total:
+        for idx in order_list:
+            if 1 <= idx <= total:
                 writer.add_page(reader.pages[idx - 1])
         
-            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
+        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
         
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF organizado")
