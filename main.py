@@ -1566,14 +1566,14 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
     
     try:
         # Parse páginas a remover e criar range de páginas a manter
-            remove_set = set()
-            for part in pages.split(','):
+        remove_set = set()
+        for part in pages.split(','):
             part = part.strip()
-                if '-' in part:
-                    start, end = map(int, part.split('-'))
-                    remove_set.update(range(start, end+1))
-                else:
-                    remove_set.add(int(part))
+            if '-' in part:
+                start, end = map(int, part.split('-'))
+                remove_set.update(range(start, end+1))
+            else:
+                remove_set.add(int(part))
         
         # Nota: ConvertAPI não tem função direta de remover páginas específicas
         # Usando pypdf para esta funcionalidade específica
@@ -1588,7 +1588,7 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
             output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_removed.pdf"
             with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
-            return FileResponse(output_path, filename="removed_pages.pdf")
+        return FileResponse(output_path, filename="removed_pages.pdf")
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao remover páginas: {str(e)}")
