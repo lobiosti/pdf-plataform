@@ -1521,15 +1521,26 @@ async def jpg_to_pdf(request: Request, files: list[UploadFile] = File(...)):
                 result.file.save(pdf_temp)
                 pdf_paths.append(pdf_temp)
             
-            # Juntar os PDFs
-            files_param = [{'File': path} for path in pdf_paths]
-            result = convertapi.convert('pdf', files_param, from_format='pdf', to_format='pdf')
+            # Juntar os PDFs usando pypdf (ConvertAPI não suporta merge direto)
+            import pypdf
+            merger = pypdf.PdfWriter()
+            for pdf_path in pdf_paths:
+                reader = pypdf.PdfReader(pdf_path)
+                for page in reader.pages:
+                    merger.add_page(page)
+            
+            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
+            with open(output_path, 'wb') as output_file:
+                merger.write(output_file)
             
             # Limpar PDFs temporários
             for path in pdf_paths:
                 if os.path.exists(path):
                     os.remove(path)
+            
+            return FileResponse(output_path, filename="imagens.pdf")
         
+        # Se chegou aqui, é uma única imagem
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_jpg2pdf.pdf"
         result.file.save(output_path)
         
