@@ -987,7 +987,17 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     
     try:
+        # Verificar se o arquivo foi salvo corretamente
+        if not os.path.exists(temp_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar arquivo temporário")
+        
+        # Verificar tamanho do arquivo
+        file_size = os.path.getsize(temp_path)
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="Arquivo PDF está vazio")
+        
         # Converter PDF para DOCX usando ConvertAPI
+        print(f"Tentando converter PDF para DOCX. Tamanho: {file_size} bytes")
         result = convertapi.convert('docx', {
             'File': temp_path
         }, from_format='pdf')
@@ -995,18 +1005,40 @@ async def convert_to_word(request: Request, file: UploadFile = File(...)):
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_converted.docx"
         result.file.save(output_path)
         
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar arquivo convertido")
+        
         return FileResponse(output_path, filename=file.filename.replace('.pdf', '.docx'))
     
     except convertapi.ApiError as e:
         error_msg = f"Erro na ConvertAPI: {str(e)}"
-        if "secret" in str(e).lower() or "api" in str(e).lower():
-            error_msg += " - Verifique se CONVERTAPI_SECRET está configurada corretamente."
+        if "secret" in str(e).lower() or "api" in str(e).lower() or "authentication" in str(e).lower():
+            error_msg = "Erro de autenticação na ConvertAPI. Verifique se CONVERTAPI_SECRET está configurada corretamente no Railway."
+        elif "file" in str(e).lower() or "format" in str(e).lower():
+            error_msg = f"Erro ao processar arquivo: {str(e)}"
+        print(f"ConvertAPI Error: {str(e)}")
         raise HTTPException(status_code=500, detail=error_msg)
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
-        error_detail = f"Erro na conversão: {str(e)}"
-        # Não expor traceback completo em produção, mas logar
-        print(f"Erro detalhado: {traceback.format_exc()}")
+        error_trace = traceback.format_exc()
+        error_type = type(e).__name__
+        error_detail = f"Erro inesperado ({error_type}): {str(e)}"
+        
+        # Log completo para debug
+        print(f"=== ERRO DETALHADO ===")
+        print(f"Tipo: {error_type}")
+        print(f"Mensagem: {str(e)}")
+        print(f"Traceback:\n{error_trace}")
+        print(f"=====================")
+        
+        # Retornar mensagem mais útil para o usuário
+        if "secret" in str(e).lower() or "api_secret" in str(e).lower():
+            error_detail = "CONVERTAPI_SECRET não configurada ou inválida. Verifique as variáveis de ambiente no Railway."
+        elif "file" in str(e).lower() or "path" in str(e).lower():
+            error_detail = f"Erro ao processar arquivo: {str(e)}"
+        
         raise HTTPException(status_code=500, detail=error_detail)
     finally:
         # Limpar arquivo temporário
