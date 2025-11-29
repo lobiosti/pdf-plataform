@@ -37,6 +37,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # IMPORTANTE: Configure a variável de ambiente CONVERTAPI_SECRET no Railway
 def get_convertapi_secret():
     """Obtém a chave da ConvertAPI, tentando ler novamente a variável de ambiente"""
+    # Importar convertapi dentro da função para evitar problemas de escopo
+    import convertapi
+    
     secret = os.environ.get("CONVERTAPI_SECRET")
     if secret:
         # A biblioteca ConvertAPI usa api_secret como propriedade que define api_credentials internamente
