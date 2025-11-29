@@ -39,12 +39,21 @@ def get_convertapi_secret():
     """Obtém a chave da ConvertAPI, tentando ler novamente a variável de ambiente"""
     secret = os.environ.get("CONVERTAPI_SECRET")
     if secret:
+        # Configurar tanto api_secret quanto api_credentials para garantir compatibilidade
         convertapi.api_secret = secret
+        # A biblioteca pode usar api_credentials internamente
+        if hasattr(convertapi, 'api_credentials'):
+            convertapi.api_credentials = secret
+        # Também tentar configurar via variável de ambiente diretamente
+        os.environ['CONVERTAPI_SECRET'] = secret
     return secret
 
 CONVERTAPI_SECRET = get_convertapi_secret()
 if not CONVERTAPI_SECRET:
     print("AVISO: CONVERTAPI_SECRET não configurada. Configure a variável de ambiente no Railway.")
+else:
+    # Garantir que está configurado corretamente
+    print(f"ConvertAPI configurada: {CONVERTAPI_SECRET[:10]}...")
 
 # Configuração do Telegram
 # IMPORTANTE: Configure as variáveis de ambiente TELEGRAM_TOKEN e TELEGRAM_CHAT_ID no Railway
