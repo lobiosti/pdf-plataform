@@ -40,10 +40,16 @@ if not CONVERTAPI_SECRET:
     raise ValueError("CONVERTAPI_SECRET não configurada. Configure a variável de ambiente no Railway.")
 convertapi.api_secret = CONVERTAPI_SECRET
 
-TELEGRAM_TOKEN = "6023316555:AAEj6mmY0gYiPVJt67c10Cj7aobE5HnLi58"
-TELEGRAM_CHAT_ID = "-4019743114"
+# Configuração do Telegram
+# IMPORTANTE: Configure as variáveis de ambiente TELEGRAM_TOKEN e TELEGRAM_CHAT_ID no Railway
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 def notify_telegram(message: str):
+    # Só envia notificação se as variáveis estiverem configuradas
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
         "chat_id": TELEGRAM_CHAT_ID,
