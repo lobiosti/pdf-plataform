@@ -1144,22 +1144,40 @@ async def merge_pdfs(request: Request, files: List[UploadFile] = File(...)):
                 shutil.copyfileobj(file.file, buffer)
             temp_paths.append(temp_path)
         
-        # Juntar PDFs usando ConvertAPI
-        # Para merge, a ConvertAPI requer passar os arquivos de forma específica
-        # Vamos converter cada PDF e depois usar a função de merge
-        files_param = []
-        for i, path in enumerate(temp_paths):
-            files_param.append({'File': path, 'Name': f'File{i+1}'})
+        # Nota: ConvertAPI não tem suporte direto para merge de múltiplos PDFs
+        # Usando pypdf para esta funcionalidade específica (merge é uma operação simples)
+        import pypdf
         
-        result = convertapi.convert('pdf', files_param, from_format='pdf')
+        merger = pypdf.PdfWriter()
+        for path in temp_paths:
+            reader = pypdf.PdfReader(path)
+            for page in reader.pages:
+                merger.add_page(page)
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_merged.pdf"
-        result.file.save(output_path)
+        with open(output_path, 'wb') as output_file:
+            merger.write(output_file)
+        
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar PDF mesclado")
         
         return FileResponse(output_path, filename="merged.pdf")
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao juntar PDFs: {str(e)}")
+        import traceback
+        error_trace = traceback.format_exc()
+        error_type = type(e).__name__
+        error_detail = f"Erro ao juntar PDFs ({error_type}): {str(e)}"
+        
+        print(f"=== ERRO DETALHADO MERGE ===")
+        print(f"Tipo: {error_type}")
+        print(f"Mensagem: {str(e)}")
+        print(f"Traceback:\n{error_trace}")
+        print(f"============================")
+        
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         # Limpar arquivos temporários
         for path in temp_paths:
