@@ -1451,48 +1451,39 @@ async def organize_pages(request: Request, file: UploadFile = File(...), order: 
     
     try:
         # Nota: ConvertAPI não tem função direta de reorganizar páginas
-        # Usando ConvertAPI para extrair páginas individuais e depois juntar
+        # Usando pypdf para organizar páginas (extrair e juntar na ordem desejada)
+        import pypdf
         
-        with open(temp_path, 'rb') as pdf_file:
-            reader = pypdf.PdfReader(pdf_file)
-            total = len(reader.pages)
-            order_list = [int(x) for x in order.split(',') if x.strip().isdigit()]
+        reader = pypdf.PdfReader(temp_path)
+        total = len(reader.pages)
+        order_list = [int(x) for x in order.split(',') if x.strip().isdigit()]
         
-        # Extrair cada página na ordem desejada
-        extracted_pages = []
+        # Validar ordem
+        invalid_pages = [p for p in order_list if p < 1 or p > total]
+        if invalid_pages:
+            raise HTTPException(status_code=400, detail=f"Páginas inválidas na ordem: {invalid_pages}. PDF tem {total} páginas.")
+        
+        writer = pypdf.PdfWriter()
         for idx in order_list:
             if 1 <= idx <= total:
-                # Extrair página individual usando ConvertAPI
-                result = convertapi.convert('pdf', {
-                    'File': temp_path,
-                    'PageRange': str(idx)
-                }, from_format='pdf')
-                page_temp = f"{OUTPUT_DIR}/{uuid.uuid4()}_page_{idx}.pdf"
-                result.file.save(page_temp)
-                extracted_pages.append(page_temp)
-        
-        # Juntar as páginas na ordem desejada
-        if len(extracted_pages) > 1:
-            files_param = [{'File': path} for path in extracted_pages]
-            result = convertapi.convert('pdf', files_param, from_format='pdf', to_format='pdf')
-        else:
-            # Se só uma página, usar diretamente
-            result = convertapi.convert('pdf', {
-                'File': extracted_pages[0]
-            }, from_format='pdf')
+                writer.add_page(reader.pages[idx - 1])
         
         output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_organized.pdf"
-        result.file.save(output_path)
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
         
-        # Limpar páginas temporárias
-        for page_path in extracted_pages:
-            if os.path.exists(page_path):
-                os.remove(page_path)
+        if not os.path.exists(output_path):
+            raise HTTPException(status_code=500, detail="Erro ao salvar PDF organizado")
         
         return FileResponse(output_path, filename="organized.pdf")
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao organizar páginas: {str(e)}")
+        import traceback
+        error_detail = f"Erro ao organizar páginas: {str(e)}"
+        print(f"Erro ao organizar páginas: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=error_detail)
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
