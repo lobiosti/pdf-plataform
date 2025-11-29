@@ -110,7 +110,7 @@ def get_country_from_ip(ip):
 
 @app.get("/", response_class=HTMLResponse)
 async def get_frontend():
-    return """
+    return r"""
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
