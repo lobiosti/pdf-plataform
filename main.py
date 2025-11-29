@@ -1480,17 +1480,17 @@ async def compress_pdf(request: Request, file: UploadFile = File(...)):
         import pypdf
         
         reader = pypdf.PdfReader(temp_path)
-        writer = pypdf.PdfWriter()
-        
-        for page in reader.pages:
-            writer.add_page(page)
-        
+            writer = pypdf.PdfWriter()
+            
+            for page in reader.pages:
+                writer.add_page(page)
+            
         # Compressão básica - remove objetos duplicados
-        writer.compress_identical_objects()
-        
-        output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
-        with open(output_path, 'wb') as output_file:
-            writer.write(output_file)
+            writer.compress_identical_objects()
+            
+            output_path = f"{OUTPUT_DIR}/{uuid.uuid4()}_compressed.pdf"
+            with open(output_path, 'wb') as output_file:
+                writer.write(output_file)
             
         if not os.path.exists(output_path):
             raise HTTPException(status_code=500, detail="Erro ao salvar PDF comprimido")
@@ -1574,15 +1574,6 @@ async def remove_pages(request: Request, file: UploadFile = File(...), pages: st
                     remove_set.update(range(start, end+1))
                 else:
                     remove_set.add(int(part))
-        
-        # Para remover páginas, precisamos extrair as páginas que queremos manter
-        # A ConvertAPI permite especificar PageRange, então vamos usar split múltiplas vezes
-        # ou usar uma abordagem diferente - vamos extrair todas as páginas exceto as removidas
-        
-        # Nota: ConvertAPI pode não ter uma função direta de remover páginas
-        # Vamos usar uma abordagem alternativa: extrair as páginas que queremos manter
-        # Primeiro, precisamos saber o total de páginas
-        # Como alternativa, podemos usar split para cada intervalo de páginas a manter
         
         # Nota: ConvertAPI não tem função direta de remover páginas específicas
         # Usando pypdf para esta funcionalidade específica
