@@ -1615,11 +1615,11 @@ async def extract_pages(request: Request, file: UploadFile = File(...), pages: s
         # Parse páginas a extrair
         extract_set = set()
         for part in pages.split(','):
-        part = part.strip()
+            part = part.strip()
             if '-' in part:
                 start, end = map(int, part.split('-'))
                 extract_set.update(range(start, end+1))
-                else:
+            else:
                 extract_set.add(int(part))
         
         reader = pypdf.PdfReader(temp_path)
